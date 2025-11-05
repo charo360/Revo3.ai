@@ -15,9 +15,9 @@ export const PlatformShowcase: FC = () => {
         {
             name: 'YouTube Thumbnails',
             icon: '🎬',
-            description: 'Create clickable thumbnails that drive engagement and boost CTR. Improve existing thumbnails or generate new ones that stand out.',
-            features: ['Improve existing thumbnails', 'Generate from video frames', 'AI-powered suggestions', 'Multiple variations'],
-            cta: 'Explore YouTube',
+            description: 'Create thumbnails that drive clicks and boost CTR. Generate new thumbnails from your video or enhance existing ones with AI-powered optimization.',
+            features: ['Create thumbnails from scratch', 'Enhance existing thumbnails', 'Generate from video frames', '10+ variations instantly'],
+            cta: 'Create YouTube Thumbnails',
             color: '#FF0000'
         },
         {
@@ -49,9 +49,9 @@ export const PlatformShowcase: FC = () => {
     return (
         <section className="platform-showcase-section">
             <div className="platform-showcase-container">
-                <h2 className="section-title">Platform-Ready Designs</h2>
+                <h2 className="section-title">Create & Enhance Thumbnails for Every Platform</h2>
                 <p className="section-subtitle">
-                    Every design is optimized for its platform. From YouTube thumbnails to podcast covers, we've got you covered.
+                    Generate thumbnails from scratch or enhance existing ones. Every thumbnail is optimized for its platform to maximize clicks and engagement.
                 </p>
                 <div className="platform-grid">
                     {platforms.map((platform, index) => (

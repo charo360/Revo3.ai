@@ -37,9 +37,9 @@ export const StatsSection: FC = () => {
     return (
         <section className="stats-section">
             <div className="stats-container">
-                <h2 className="section-title">Trusted by Creators Worldwide</h2>
+                <h2 className="section-title">Thumbnails That Drive Results</h2>
                 <p className="section-subtitle">
-                    Join millions of creators using Revo3.ai to create viral content that converts
+                    Join millions of creators using Revo3.ai to create and enhance thumbnails that boost clicks and engagement
                 </p>
                 <div className="stats-grid">
                     {stats.map((stat, index) => (

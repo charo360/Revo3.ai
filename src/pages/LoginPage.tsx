@@ -38,7 +38,7 @@ export const LoginPage: FC = () => {
                     setError(error.message || 'Failed to sign in');
                 }
             } else {
-                navigate('/app');
+                navigate('/dashboard');
             }
         } catch (err: any) {
             setError(err.message || 'An unexpected error occurred');

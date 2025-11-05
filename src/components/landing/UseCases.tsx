@@ -5,9 +5,9 @@ export const UseCases: FC = () => {
     const useCases = [
         {
             title: 'YouTube Creators',
-            description: 'Improve thumbnail CTR and grow your channel with AI-powered designs that stand out in the feed.',
+            description: 'Create thumbnails from scratch or enhance existing ones. Boost CTR and grow your channel with AI-powered thumbnails that stand out.',
             icon: '🎬',
-            features: ['Improve existing thumbnails', 'Analyze video frames', 'Suggest color palettes', 'Generate multiple variations'],
+            features: ['Create thumbnails from scratch', 'Enhance existing thumbnails', 'Generate 10+ variations', 'AI-powered CTR optimization'],
             color: '#FF0000'
         },
         {
@@ -50,9 +50,9 @@ export const UseCases: FC = () => {
     return (
         <section className="use-cases-section">
             <div className="use-cases-container">
-                <h2 className="section-title">Built for Every Creator</h2>
+                <h2 className="section-title">Create & Enhance Thumbnails for Every Creator</h2>
                 <p className="section-subtitle">
-                    Whether you're a YouTuber, podcaster, social media manager, or business owner, Revo3.ai has you covered.
+                    Whether you're creating thumbnails from scratch or enhancing existing ones, Revo3.ai helps every creator boost clicks and engagement.
                 </p>
                 <div className="use-cases-grid">
                     {useCases.map((useCase, index) => (

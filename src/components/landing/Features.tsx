@@ -4,42 +4,43 @@ export const Features: FC = () => {
     const features = [
         {
             icon: '🎬',
-            title: 'YouTube Thumbnail Generator',
-            description: 'Improve existing thumbnails or create new ones that drive clicks and engagement.'
+            title: 'Create Thumbnails from Scratch',
+            description: 'Generate stunning, clickable thumbnails from your video content, descriptions, or ideas. AI understands what makes thumbnails work.'
         },
         {
-            icon: '🎙️',
-            title: 'Podcast Cover Designer',
-            description: 'Create professional, eye-catching podcast covers that stand out in any directory.'
-        },
-        {
-            icon: '📱',
-            title: 'TikTok & Social Media',
-            description: 'Generate viral-ready covers for TikTok, Twitter, and other platforms in seconds.'
-        },
-        {
-            icon: '🎨',
-            title: 'AI Magic Studio',
-            description: 'Edit images with AI-powered tools - add elements, remove backgrounds, upscale quality.'
+            icon: '✨',
+            title: 'Enhance Existing Thumbnails',
+            description: 'Upload your current thumbnail and let AI improve it - better colors, clearer text, more engaging composition, higher CTR.'
         },
         {
             icon: '🎯',
-            title: 'Smart Color Palettes',
-            description: 'AI analyzes your content and suggests perfect color schemes for maximum impact.'
+            title: 'YouTube Thumbnail Optimization',
+            description: 'AI analyzes top-performing thumbnails and creates variations optimized for maximum clicks and engagement on YouTube.'
+        },
+        {
+            icon: '📊',
+            title: 'Multiple Variations Instantly',
+            description: 'Generate 10+ thumbnail variations in seconds. Test different styles, colors, and layouts to find what works best.'
+        },
+        {
+            icon: '🎨',
+            title: 'AI-Powered Thumbnail Editing',
+            description: 'Enhance thumbnails with AI - adjust colors, add text overlays, remove backgrounds, upscale quality, all automatically.'
         },
         {
             icon: '⚡',
-            title: 'Lightning Fast',
-            description: 'Generate multiple design variations in seconds, not hours.'
+            title: 'Fast Thumbnail Generation',
+            description: 'Create professional thumbnails in seconds, not hours. No design skills required - just describe what you want.'
         }
     ];
 
     return (
         <section className="features-section">
             <div className="features-container">
-                <h2 className="section-title">Everything You Need to Create</h2>
+                <h2 className="section-title">Everything You Need to Create Perfect Thumbnails</h2>
                 <p className="section-subtitle">
-                    Our AI understands what makes designs work. Just describe what you want, and watch the magic happen.
+                    Create new thumbnails or enhance existing ones. Our AI understands what makes thumbnails clickable and engaging. 
+                    Generate variations, optimize for your platform, and watch your CTR improve.
                 </p>
                 <div className="features-grid">
                     {features.map((feature, index) => (

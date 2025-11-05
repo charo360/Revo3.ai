@@ -14,6 +14,7 @@ import { PodcastPage } from './pages/platforms/PodcastPage';
 import { TikTokPage } from './pages/platforms/TikTokPage';
 import { TwitterPage } from './pages/platforms/TwitterPage';
 import { RepurposePage } from './pages/platforms/RepurposePage';
+import { ProfilePage } from './pages/ProfilePage';
 import { App } from './App';
 
 export const AppRouter: FC = () => {
@@ -33,10 +34,18 @@ export const AppRouter: FC = () => {
                     <Route path="/platforms/twitter" element={<TwitterPage />} />
                     <Route path="/platforms/repurpose" element={<RepurposePage />} />
                     <Route
-                        path="/app"
+                        path="/dashboard"
                         element={
                             <ProtectedRoute>
                                 <App />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/profile"
+                        element={
+                            <ProtectedRoute>
+                                <ProfilePage />
                             </ProtectedRoute>
                         }
                     />
