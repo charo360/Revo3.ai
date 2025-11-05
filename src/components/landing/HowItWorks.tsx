@@ -5,26 +5,26 @@ export const HowItWorks: FC = () => {
     const steps = [
         {
             number: '01',
-            title: 'Start with Your Content',
-            description: 'Upload images, videos, or paste a YouTube URL. Our AI extracts the best frames and understands your content.',
+            title: 'Upload Video or Existing Thumbnail',
+            description: 'Paste a YouTube URL or upload your video. Want to enhance an existing thumbnail? Just upload it. AI extracts frames and analyzes your content.',
             icon: '📤'
         },
         {
             number: '02',
-            title: 'Configure Your Design',
-            description: 'Set your preferences: platform, colors, text, logo placement, and style. Or let AI suggest the best options.',
+            title: 'Choose: Create or Enhance',
+            description: 'Create a new thumbnail from scratch or enhance your existing one. Set preferences for colors, text, style - or let AI optimize automatically.',
             icon: '⚙️'
         },
         {
             number: '03',
-            title: 'Generate & Refine',
-            description: 'Click generate and get multiple design variations in seconds. Use our editor to fine-tune or generate again.',
+            title: 'Generate Thumbnail Variations',
+            description: 'Get 10+ thumbnail variations in seconds. Each optimized for clicks and engagement. Use our editor to fine-tune or generate more variations.',
             icon: '✨'
         },
         {
             number: '04',
-            title: 'Export & Publish',
-            description: 'Download your designs in high resolution. All designs are ready to use immediately on any platform.',
+            title: 'Download & Boost CTR',
+            description: 'Download your optimized thumbnails in high resolution. Ready to upload and watch your click-through rates improve.',
             icon: '🚀'
         }
     ];
@@ -32,9 +32,9 @@ export const HowItWorks: FC = () => {
     return (
         <section className="how-it-works-section">
             <div className="how-it-works-container">
-                <h2 className="section-title">How It Works</h2>
+                <h2 className="section-title">How to Create & Enhance Thumbnails</h2>
                 <p className="section-subtitle">
-                    Creating viral designs has never been easier. Four simple steps from idea to execution.
+                    Create thumbnails from scratch or enhance existing ones. Four simple steps to thumbnails that drive clicks and engagement.
                 </p>
                 <div className="steps-grid">
                     {steps.map((step, index) => (
@@ -48,7 +48,7 @@ export const HowItWorks: FC = () => {
                 </div>
                 <div className="how-it-works-cta">
                     <Link to="/signup" className="cta-button primary">
-                        Start Creating Free
+                        Start Creating Thumbnails Free
                     </Link>
                 </div>
             </div>

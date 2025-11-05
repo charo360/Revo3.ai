@@ -3,18 +3,18 @@ import React, { FC } from 'react';
 export const ValueProps: FC = () => {
     const props = [
         {
-            title: 'Cutting-edge AI tools',
-            description: 'Generate anything you can imagine with the newest AI image and AI video generators, and voiceover your videos with exclusive voices.',
-            icon: '🤖'
+            title: 'Create or Enhance Thumbnails',
+            description: 'Generate brand new thumbnails from scratch or enhance your existing ones. AI analyzes what makes thumbnails clickable and creates variations that drive engagement.',
+            icon: '🎬'
         },
         {
-            title: 'Highest-quality assets',
-            description: 'Create standout videos with royalty-free designs, templates, and assets that are always on trend and platform-optimized.',
-            icon: '⭐'
+            title: 'Thumbnail-Optimized AI',
+            description: 'Our AI is specifically trained on high-performing thumbnails. It understands color psychology, text placement, and composition that maximizes click-through rates.',
+            icon: '📈'
         },
         {
-            title: 'Built for you',
-            description: 'Every tool or asset has been built by creators, for creators, to streamline and simplify your creative process.',
+            title: 'Built for Content Creators',
+            description: 'Every feature is designed for creators who need thumbnails that perform. Fast generation, multiple variations, and platform-specific optimization.',
             icon: '👥'
         }
     ];

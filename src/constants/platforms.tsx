@@ -35,8 +35,8 @@ export const PLATFORM_CONFIGS: Record<Platform, {
     repurpose: {
         title: "Content Repurpose",
         icon: ICONS.ADAPT,
-        aspectRatio: "1:1",
-        promptSnippet: "This is for repurposing content for multiple social media platforms. The design should be versatile, clean, and easily adaptable. Key information should be centered and clear."
+        aspectRatio: "9:16",
+        promptSnippet: "This is for repurposing long videos into viral short-form content. AI analyzes the video to identify the most engaging moments, creates optimized clips for YouTube Shorts, TikTok, Instagram Reels, and other platforms. The content should be attention-grabbing, well-paced, and optimized for maximum engagement."
     },
     twitter: {
         title: "Twitter Card",

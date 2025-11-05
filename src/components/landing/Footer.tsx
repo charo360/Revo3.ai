@@ -27,7 +27,7 @@ export const Footer: FC = () => {
                         <ul className="footer-links">
                             <li><Link to="/features">Features</Link></li>
                             <li><Link to="/pricing">Pricing</Link></li>
-                            <li><Link to="/app">Studio</Link></li>
+                            <li><Link to="/dashboard">Studio</Link></li>
                             <li><Link to="/business">Business</Link></li>
                         </ul>
                     </div>

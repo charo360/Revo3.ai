@@ -6,12 +6,13 @@ export const Hero: FC = () => {
         <section className="hero-section">
             <div className="hero-container">
                 <h1 className="hero-title">
-                    AI-Powered Design Studio<br />
-                    <span className="gradient-text">That Creates Viral Content</span>
+                    Create & Enhance Thumbnails<br />
+                    <span className="gradient-text">That Drive Clicks & Engagement</span>
                 </h1>
                 <p className="hero-description">
-                    Get cutting-edge AI design generation for YouTube, podcasts, TikTok, Twitter, and more. 
-                    The choice of 30M+ creators. Generate anything you can imagine with the newest AI tools.
+                    AI-powered thumbnail generator that creates stunning, clickable thumbnails or enhances your existing ones. 
+                    Generate YouTube thumbnails, podcast covers, TikTok covers, and more in seconds. 
+                    The choice of creators who want thumbnails that actually perform.
                 </p>
                 <div className="hero-cta">
                     <Link to="/signup" className="cta-button primary">
@@ -24,15 +25,15 @@ export const Hero: FC = () => {
                 <div className="hero-stats">
                     <div className="stat-item">
                         <div className="stat-number">10K+</div>
-                        <div className="stat-label">Designs Created</div>
+                        <div className="stat-label">Thumbnails Created</div>
                     </div>
                     <div className="stat-item">
-                        <div className="stat-number">99%</div>
-                        <div className="stat-label">Uptime</div>
+                        <div className="stat-number">40%</div>
+                        <div className="stat-label">Avg CTR Increase</div>
                     </div>
                     <div className="stat-item">
-                        <div className="stat-number">24/7</div>
-                        <div className="stat-label">AI Powered</div>
+                        <div className="stat-number">30s</div>
+                        <div className="stat-label">Generation Time</div>
                     </div>
                 </div>
             </div>

@@ -55,7 +55,7 @@ export const SignupPage: FC = () => {
                         setTimeout(() => navigate('/login'), 2000);
                     }
                 } else {
-                    navigate('/app');
+                    navigate('/dashboard');
                 }
             }
         } catch (err: any) {

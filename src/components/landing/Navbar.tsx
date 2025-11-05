@@ -30,7 +30,7 @@ export const Navbar: FC = () => {
                     
                     {user ? (
                         <>
-                            <Link to="/app" className="navbar-link">Studio</Link>
+                            <Link to="/dashboard" className="navbar-link">Studio</Link>
                             <button onClick={signOut} className="navbar-button secondary">
                                 Sign Out
                             </button>
