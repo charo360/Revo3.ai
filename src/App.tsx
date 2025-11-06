@@ -76,6 +76,9 @@ export const App: FC = () => {
         { id: 1, sender: 'ai', text: "Hello! I'm your AI design assistant. How can I help you? You can ask me to change text, colors, or even suggest ideas." }
     ]);
 
+    // Mobile Sidebar State
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
     const ai = useRef<GoogleGenAI>(new GoogleGenAI({ apiKey: process.env.API_KEY }));
     
     // Save preferences to localStorage on change
@@ -101,6 +104,8 @@ export const App: FC = () => {
         setIsGenerating(true);
         setError(null);
         setResults([]);
+        // Close sidebar on mobile after starting generation
+        setIsSidebarOpen(false);
 
         try {
             let videoFrames: ImageAsset[] = [];
@@ -432,8 +437,20 @@ export const App: FC = () => {
 
     return (
         <div className="app-container">
-            <Header platform={platform} onPlatformChange={setPlatform} />
+            <Header 
+                platform={platform} 
+                onPlatformChange={setPlatform}
+                onSidebarToggle={() => setIsSidebarOpen(prev => !prev)}
+                isSidebarOpen={isSidebarOpen}
+            />
             <main className="main-content">
+                {/* Mobile Sidebar Overlay */}
+                {isSidebarOpen && (
+                    <div 
+                        className="sidebar-overlay"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                )}
                 <Sidebar
                     platform={platform}
                     text={text} onTextChange={setText}
@@ -454,6 +471,8 @@ export const App: FC = () => {
                     isGeneratingVideo={isGeneratingVideo}
                     onTranscriptChange={setYoutubeTranscript}
                     onOriginalTitleChange={setOriginalYoutubeTitle}
+                    isOpen={isSidebarOpen}
+                    onClose={() => setIsSidebarOpen(false)}
                 />
                 <Canvas
                     results={results}
