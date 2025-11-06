@@ -7,9 +7,11 @@ import { useAuth } from '../../contexts/AuthContext';
 interface HeaderProps {
     platform: Platform;
     onPlatformChange: (platform: Platform) => void;
+    onSidebarToggle?: () => void;
+    isSidebarOpen?: boolean;
 }
 
-export const Header: FC<HeaderProps> = ({ platform, onPlatformChange }) => {
+export const Header: FC<HeaderProps> = ({ platform, onPlatformChange, onSidebarToggle, isSidebarOpen }) => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
@@ -40,6 +42,29 @@ export const Header: FC<HeaderProps> = ({ platform, onPlatformChange }) => {
         };
     }, [userMenuOpen]);
 
+    // Close mobile platform menu when clicking outside
+    useEffect(() => {
+        if (!mobileMenuOpen) return;
+        
+        const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('.mobile-platform-selector')) {
+                setMobileMenuOpen(false);
+            }
+        };
+        
+        const timeoutId = setTimeout(() => {
+            document.addEventListener('mousedown', handleClickOutside as EventListener);
+            document.addEventListener('touchstart', handleClickOutside as EventListener);
+        }, 100);
+        
+        return () => {
+            clearTimeout(timeoutId);
+            document.removeEventListener('mousedown', handleClickOutside as EventListener);
+            document.removeEventListener('touchstart', handleClickOutside as EventListener);
+        };
+    }, [mobileMenuOpen]);
+
     const handleSignOut = async () => {
         await signOut();
         navigate('/');
@@ -48,12 +73,44 @@ export const Header: FC<HeaderProps> = ({ platform, onPlatformChange }) => {
     return (
         <header className="app-header">
             <div className="header-container">
+                {/* Mobile Sidebar Toggle */}
+                {onSidebarToggle && (
+                    <button 
+                        className="sidebar-toggle-btn"
+                        onClick={onSidebarToggle}
+                        aria-label="Toggle sidebar"
+                        aria-expanded={isSidebarOpen}
+                    >
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                )}
                 <div className="header-left">
+                    {/* Home Link */}
+                    <Link 
+                        to="/" 
+                        className="header-home-link"
+                        title="Go to Home"
+                        aria-label="Go to Home"
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        <span className="header-home-text">Home</span>
+                    </Link>
+                    
                     {/* Mobile Platform Selector */}
                     <div className={`mobile-platform-selector ${mobileMenuOpen ? 'active' : ''}`}>
                     <button
                         className="mobile-platform-btn"
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setMobileMenuOpen(!mobileMenuOpen);
+                        }}
                         aria-label="Select platform"
                         aria-expanded={mobileMenuOpen}
                         type="button"
@@ -72,7 +129,8 @@ export const Header: FC<HeaderProps> = ({ platform, onPlatformChange }) => {
                                     <button
                                         key={key}
                                         className={`mobile-platform-item ${key === platform ? 'active' : ''}`}
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                            e.stopPropagation();
                                             onPlatformChange(key);
                                             setMobileMenuOpen(false);
                                         }}

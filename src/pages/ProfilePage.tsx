@@ -130,10 +130,6 @@ export const ProfilePage: FC = () => {
                                     <div className="profile-value">{user?.email}</div>
                                 </div>
                                 <div className="profile-info-item">
-                                    <label>User ID</label>
-                                    <div className="profile-value-small">{user?.id}</div>
-                                </div>
-                                <div className="profile-info-item">
                                     <label>Account Created</label>
                                     <div className="profile-value-small">
                                         {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
