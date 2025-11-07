@@ -1,9 +1,10 @@
 import React, { FC, useState } from 'react';
+import { toast } from 'react-toastify';
 import { ImageAsset, TextState } from '../../types';
 import { Module } from './Module';
 import { ICONS } from '../../constants';
-import { imageUrlToBase64 } from '../../utils/imageUtils';
-import { fetchTranscript } from '../../utils/youtubeUtils';
+import { imageUrlToBase64 } from '../../shared/utils/image-utils';
+import { fetchTranscript } from '../../shared/utils/youtube-utils';
 
 interface YouTubeModuleProps {
     onImagesChange: (i: ImageAsset[]) => void;
@@ -21,14 +22,12 @@ export const YouTubeModule: FC<YouTubeModuleProps> = ({
 }) => {
     const [youtubeUrl, setYoutubeUrl] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [fetchedInfo, setFetchedInfo] = useState<{ title: string; thumbnailUrl: string } | null>(null);
     const [transcriptStatus, setTranscriptStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
     const handleFetchInfo = async () => {
         if (!youtubeUrl) return;
         setIsLoading(true);
-        setError(null);
         setFetchedInfo(null);
         onTranscriptChange(null);
         onOriginalTitleChange('');
@@ -56,14 +55,20 @@ export const YouTubeModule: FC<YouTubeModuleProps> = ({
                 mimeType,
             };
             onImagesChange([...images, newImage]);
+            toast.success('Video information loaded successfully!');
 
             setTranscriptStatus('loading');
             const transcript = await fetchTranscript(youtubeUrl);
             onTranscriptChange(transcript);
             setTranscriptStatus(transcript ? 'success' : 'error');
+            if (transcript) {
+                toast.success('Transcript loaded successfully!');
+            } else {
+                toast.warning('Transcript not available for this video.');
+            }
 
         } catch (e: any) {
-            setError(e.message || 'An unknown error occurred.');
+            toast.error(e.message || 'An unknown error occurred.');
             setTranscriptStatus('error');
         } finally {
             setIsLoading(false);
@@ -73,7 +78,6 @@ export const YouTubeModule: FC<YouTubeModuleProps> = ({
     const handleReset = () => {
         setYoutubeUrl('');
         setFetchedInfo(null);
-        setError(null);
         onImagesChange(images.filter(img => !img.id.startsWith('yt_')));
         onTranscriptChange(null);
         onOriginalTitleChange('');
@@ -131,7 +135,6 @@ export const YouTubeModule: FC<YouTubeModuleProps> = ({
                             {isLoading ? <div className="spinner"></div> : 'Fetch Info'}
                         </button>
                     </div>
-                    {error && <p className="youtube-error">{error}</p>}
                 </>
             )}
         </Module>

@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { TextState, ColorsState, PreferencesState } from '../../types';
-import { VIBE_STYLES } from '../../constants';
+import { TextState, ColorsState, PreferencesState } from '../../../../../types';
+import { VIBE_STYLES } from '../../../../../constants';
 
 export const getAssistantResponse = async (
     ai: GoogleGenAI, 

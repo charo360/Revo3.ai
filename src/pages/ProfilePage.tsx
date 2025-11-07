@@ -1,5 +1,6 @@
 import React, { FC, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -8,8 +9,6 @@ export const ProfilePage: FC = () => {
     const { user, signOut, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
     const [email, setEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -26,19 +25,17 @@ export const ProfilePage: FC = () => {
         if (!email || email === user?.email) return;
 
         setLoading(true);
-        setError(null);
-        setSuccess(null);
 
         try {
             const { error: updateError } = await supabase.auth.updateUser({ email });
             if (updateError) {
-                setError(updateError.message);
+                toast.error(updateError.message || 'Failed to update email');
             } else {
-                setSuccess('Email update request sent! Please check your new email for confirmation.');
+                toast.success('Email update request sent! Please check your new email for confirmation.');
                 setEmail(user?.email || '');
             }
         } catch (err: any) {
-            setError(err.message || 'Failed to update email');
+            toast.error(err.message || 'Failed to update email');
         } finally {
             setLoading(false);
         }
@@ -47,30 +44,28 @@ export const ProfilePage: FC = () => {
     const handleUpdatePassword = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newPassword || newPassword !== confirmPassword) {
-            setError('Passwords do not match');
+            toast.error('Passwords do not match');
             return;
         }
 
         if (newPassword.length < 6) {
-            setError('Password must be at least 6 characters');
+            toast.error('Password must be at least 6 characters');
             return;
         }
 
         setLoading(true);
-        setError(null);
-        setSuccess(null);
 
         try {
             const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
             if (updateError) {
-                setError(updateError.message);
+                toast.error(updateError.message || 'Failed to update password');
             } else {
-                setSuccess('Password updated successfully!');
+                toast.success('Password updated successfully!');
                 setNewPassword('');
                 setConfirmPassword('');
             }
         } catch (err: any) {
-            setError(err.message || 'Failed to update password');
+            toast.error(err.message || 'Failed to update password');
         } finally {
             setLoading(false);
         }
@@ -78,6 +73,7 @@ export const ProfilePage: FC = () => {
 
     const handleSignOut = async () => {
         await signOut();
+        toast.success('Signed out successfully');
         navigate('/');
     };
 
@@ -143,8 +139,6 @@ export const ProfilePage: FC = () => {
                     <section className="profile-section">
                         <h2>Update Email</h2>
                         <form onSubmit={handleUpdateEmail} className="profile-form">
-                            {error && <div className="profile-error">{error}</div>}
-                            {success && <div className="profile-success">{success}</div>}
                             <div className="form-group">
                                 <label htmlFor="email">New Email</label>
                                 <input
@@ -166,8 +160,6 @@ export const ProfilePage: FC = () => {
                     <section className="profile-section">
                         <h2>Change Password</h2>
                         <form onSubmit={handleUpdatePassword} className="profile-form">
-                            {error && <div className="profile-error">{error}</div>}
-                            {success && <div className="profile-success">{success}</div>}
                             <div className="form-group">
                                 <label htmlFor="new-password">New Password</label>
                                 <input

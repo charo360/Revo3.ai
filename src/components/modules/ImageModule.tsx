@@ -1,10 +1,11 @@
 import React, { FC, useRef, useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { ImageAsset, Platform, ImagenAspectRatio } from '../../types';
 import { Module } from './Module';
 import { ICONS } from '../../constants';
 import { PLATFORM_CONFIGS } from '../../constants/platforms';
 import { isImagenAspectRatio } from '../../constants/aspectRatios';
-import { fileToBase64 } from '../../utils/imageUtils';
+import { fileToBase64 } from '../../shared/utils/image-utils';
 
 interface ImageModuleProps {
     platform: Platform;
@@ -30,9 +31,20 @@ export const ImageModule: FC<ImageModuleProps> = ({ images, onImagesChange, onGe
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            const { base64, mimeType } = await fileToBase64(file);
-            const newImage = { id: `img_${Date.now()}`, url: URL.createObjectURL(file), base64, mimeType };
-            onImagesChange([...images, newImage]);
+            try {
+                // Check file size (max 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    toast.error('Image file size must be less than 10MB');
+                    return;
+                }
+                
+                const { base64, mimeType } = await fileToBase64(file);
+                const newImage = { id: `img_${Date.now()}`, url: URL.createObjectURL(file), base64, mimeType };
+                onImagesChange([...images, newImage]);
+                toast.success('Image uploaded successfully!');
+            } catch (error: any) {
+                toast.error(`Failed to upload image: ${error.message || 'Unknown error'}`);
+            }
         }
     };
 

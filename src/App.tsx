@@ -1,5 +1,6 @@
 import React, { useState, FC, useRef, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
+import { toast } from 'react-toastify';
 import {
     Platform, ImageAsset, VideoAsset, LogoState, TextState, ColorsState, 
     PreferencesState, DesignResult, AnalysisResult, AssistantMessage, 
@@ -10,9 +11,9 @@ import {
     generateDesign, adaptImageForPlatform, generateImage, editImage, 
     upscaleImage, analyzeVideoAndSuggestStyles, extractFacesFromImage, 
     getAssistantResponse 
-} from './services/ai';
-import { extractFramesFromVideo } from './utils/videoUtils';
-import { loadPreferences, savePreferences, loadEditorState, saveEditorState, clearEditorState } from './utils/storageUtils';
+} from './core/services/ai-providers/gemini';
+import { extractFramesFromVideo } from './shared/utils/video-utils';
+import { loadPreferences, savePreferences, loadEditorState, saveEditorState, clearEditorState } from './shared/utils/storage-utils';
 import { Header } from './components/layout/Header';
 import { Canvas } from './components/layout/Canvas';
 // Sidebar will be imported from components/modules/Sidebar
@@ -64,7 +65,6 @@ export const App: FC = () => {
     const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-    const [error, setError] = useState<string | null>(null);
     const [editingImage, setEditingImage] = useState<ImageAsset | null>(null);
     const [editorState, setEditorState] = useState<EditorState | null>(null);
     const [previewingImage, setPreviewingImage] = useState<ImageAsset | null>(null);
@@ -102,7 +102,6 @@ export const App: FC = () => {
         if (isGenerating) return;
 
         setIsGenerating(true);
-        setError(null);
         setResults([]);
         // Close sidebar on mobile after starting generation
         setIsSidebarOpen(false);
@@ -115,9 +114,10 @@ export const App: FC = () => {
             const allImages = [...images, ...videoFrames];
             const results = await generateDesign(ai.current, allImages, logo, colors, preferences, platform, youtubeTranscript, originalYoutubeTitle, text);
             setResults(results);
+            toast.success('Designs generated successfully!');
         } catch (e: any) {
             console.error(e);
-            setError(`An error occurred: ${e.message}`);
+            toast.error(`An error occurred: ${e.message || 'Failed to generate designs'}`);
         } finally {
             setIsGenerating(false);
         }
@@ -126,7 +126,6 @@ export const App: FC = () => {
     const handleAnalyzeVideo = async () => {
         if (!videoAsset || isAnalyzing) return;
         setIsAnalyzing(true);
-        setError(null);
         setAnalysisResult(null);
 
         try {
@@ -135,9 +134,10 @@ export const App: FC = () => {
             setAnalysisResult(result);
             setColors(result.suggestedColors);
             setPreferences(prev => ({ ...prev, style: result.suggestedStyle }));
+            toast.success('Video analyzed successfully!');
         } catch (e: any) {
             console.error(e);
-            setError(`Failed to analyze video: ${e.message}`);
+            toast.error(`Failed to analyze video: ${e.message || 'Unknown error'}`);
         } finally {
             setIsAnalyzing(false);
         }
@@ -146,7 +146,6 @@ export const App: FC = () => {
     const handleExtractFaces = async () => {
         if (!videoAsset || isExtractingFaces) return;
         setIsExtractingFaces(true);
-        setError(null);
         try {
             const frame = (await extractFramesFromVideo(videoAsset.url, trimTimes.start, trimTimes.end, 1))[0];
             if (!frame) {
@@ -154,9 +153,10 @@ export const App: FC = () => {
             }
             const faces = await extractFacesFromImage(ai.current, frame);
             setCutoutAssets(prev => [...prev, ...faces]);
+            toast.success(`Extracted ${faces.length} face(s) successfully!`);
         } catch (e: any) {
             console.error(e);
-            setError(`Failed to extract faces: ${e.message}`);
+            toast.error(`Failed to extract faces: ${e.message || 'Unknown error'}`);
         } finally {
             setIsExtractingFaces(false);
         }
@@ -206,16 +206,16 @@ export const App: FC = () => {
         if (isGenerating) return;
 
         setIsGenerating(true);
-        setError(null);
         setResults([]);
         setPlatform(targetPlatform);
 
         try {
             const adaptedResults = await adaptImageForPlatform(ai.current, sourceImage, targetPlatform, text, logo, colors, preferences);
             setResults(adaptedResults);
+            toast.success('Design adapted successfully!');
         } catch (e: any) {
             console.error(e);
-            setError(`An error occurred during adaptation: ${e.message}`);
+            toast.error(`An error occurred during adaptation: ${e.message || 'Unknown error'}`);
         } finally {
             setIsGenerating(false);
         }
@@ -223,16 +223,16 @@ export const App: FC = () => {
 
     const handleGenerateImage = async (prompt: string, negativePrompt: string, aspectRatio: ImagenAspectRatio): Promise<ImageAsset | null> => {
         setIsGeneratingImage(true);
-        setError(null);
         try {
             const image = await generateImage(ai.current, prompt, negativePrompt, aspectRatio);
             if (image) {
                 setImages(prev => [...prev, image]);
+                toast.success('Image generated successfully!');
             }
             return image;
         } catch (e: any) {
             console.error(e);
-            setError(`Image generation failed: ${e.message}`);
+            toast.error(`Image generation failed: ${e.message || 'Unknown error'}`);
             return null;
         } finally {
             setIsGeneratingImage(false);
@@ -246,7 +246,6 @@ export const App: FC = () => {
         }
 
         setIsGeneratingVideo(true);
-        setError(null);
         setVideoAsset(null);
 
         try {
@@ -295,10 +294,11 @@ export const App: FC = () => {
                 file: videoFile,
                 url: videoUrl
             });
+            toast.success('Video generated successfully!');
     
         } catch (e: any) {
             console.error(e);
-            setError(`An error occurred during video generation: ${e.message}`);
+            toast.error(`An error occurred during video generation: ${e.message || 'Unknown error'}`);
         } finally {
             setIsGeneratingVideo(false);
         }
@@ -316,9 +316,10 @@ export const App: FC = () => {
             const editedImage = await editImage(ai.current, originalImage, prompt, mask);
             const newResults = results.map(r => r.image?.id === originalId ? { ...r, image: editedImage } : r);
             setResults(newResults);
+            toast.success('Image edited successfully!');
         } catch(e: any) {
             console.error(e);
-            setError(`Failed to edit image: ${e.message}`);
+            toast.error(`Failed to edit image: ${e.message || 'Unknown error'}`);
         } finally {
             setResults(prev => prev.map((r, i) => i === resultIndex ? { ...r, isEditing: false } : r));
         }
@@ -335,9 +336,10 @@ export const App: FC = () => {
             const upscaledImage = await upscaleImage(ai.current, imageToUpscale);
             const newResults = results.map(r => r.image?.id === originalId ? { ...r, image: upscaledImage } : r);
             setResults(newResults);
+            toast.success('Image upscaled successfully!');
         } catch(e: any) {
             console.error(e);
-            setError(`Failed to upscale image: ${e.message}`);
+            toast.error(`Failed to upscale image: ${e.message || 'Unknown error'}`);
         } finally {
             setResults(prev => prev.map((r, i) => i === resultIndex ? { ...r, isUpscaling: false } : r));
         }
@@ -407,12 +409,14 @@ export const App: FC = () => {
                         image: recoloredImage,
                     })).catch(err => {
                         console.error("Recoloring failed for one image:", err);
+                        toast.warning(`Failed to recolor one image: ${err.message || 'Unknown error'}`);
                         return { ...result };
                     });
                 });
     
                 const newResults = await Promise.all(recolorPromises);
                 setResults(newResults.map(r => ({ ...r, isEditing: false })));
+                toast.success('Designs recolored successfully!');
     
                 const completionMessage: AssistantMessage = {
                     id: Date.now() + 2,
@@ -424,6 +428,7 @@ export const App: FC = () => {
     
         } catch (e: any) {
             console.error("Assistant Error:", e);
+            toast.error(`Assistant error: ${e.message || 'Unknown error'}`);
             const errorAiMessage: AssistantMessage = {
                 id: Date.now() + 1,
                 sender: 'ai',
@@ -487,7 +492,6 @@ export const App: FC = () => {
                     onAssistantToggle={() => setIsAssistantOpen(prev => !prev)}
                 />
             </main>
-            {error && <div className="error-toast" onClick={() => setError(null)}>{error}</div>}
             {editorState && (
                 <Editor
                     initialState={editorState}
