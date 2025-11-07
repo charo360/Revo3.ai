@@ -1,5 +1,6 @@
 import React, { FC, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { useAuth } from '../contexts/AuthContext';
 
 export const SignupPage: FC = () => {
@@ -8,22 +9,20 @@ export const SignupPage: FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { signUp, signIn } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
 
         if (password !== confirmPassword) {
-            setError('Passwords do not match');
+            toast.error('Passwords do not match');
             return;
         }
 
         if (password.length < 6) {
-            setError('Password must be at least 6 characters');
+            toast.error('Password must be at least 6 characters');
             return;
         }
 
@@ -34,16 +33,17 @@ export const SignupPage: FC = () => {
             
             if (signUpError) {
                 if (signUpError.name === 'EmailConfirmationRequired') {
-                    setError('Email confirmation is enabled in Supabase. Please go to your Supabase dashboard → Authentication → Providers → Email → Toggle OFF "Confirm email" to allow direct signup.');
+                    toast.error('Email confirmation is enabled in Supabase. Please go to your Supabase dashboard → Authentication → Providers → Email → Toggle OFF "Confirm email" to allow direct signup.');
                 } else if (signUpError.name === 'ConfigurationError') {
-                    setError(signUpError.message || 'Supabase is not configured. Please set up your environment variables.');
+                    toast.error(signUpError.message || 'Supabase is not configured. Please set up your environment variables.');
                 } else if (signUpError.name === 'NetworkError' || signUpError.message?.includes('Failed to fetch') || signUpError.message?.includes('ERR_NAME_NOT_RESOLVED')) {
-                    setError('Unable to connect to Supabase. Please verify your Supabase project URL is correct. Check your .env.local file and ensure VITE_SUPABASE_URL points to a valid Supabase project.');
+                    toast.error('Unable to connect to Supabase. Please verify your Supabase project URL is correct. Check your .env.local file and ensure VITE_SUPABASE_URL points to a valid Supabase project.');
                 } else {
-                    setError(signUpError.message || 'Failed to sign up');
+                    toast.error(signUpError.message || 'Failed to sign up');
                 }
             } else if (session) {
                 // User is already signed in (email confirmation disabled)
+                toast.success('Account created successfully!');
                 navigate('/app');
             } else {
                 // Try to sign in (fallback)
@@ -51,17 +51,18 @@ export const SignupPage: FC = () => {
                 
                 if (signInError) {
                     if (signInError.message?.includes('Email not confirmed')) {
-                        setError('Email confirmation is required. Please disable it in Supabase dashboard: https://supabase.com/dashboard/project/yxsscklulcedocisdrje/auth/providers');
+                        toast.error('Email confirmation is required. Please disable it in Supabase dashboard: https://supabase.com/dashboard/project/yxsscklulcedocisdrje/auth/providers');
                     } else {
-                        setError('Account created but sign-in failed. Please try signing in manually.');
+                        toast.warning('Account created but sign-in failed. Please try signing in manually.');
                         setTimeout(() => navigate('/login'), 2000);
                     }
                 } else {
+                    toast.success('Account created and signed in successfully!');
                     navigate('/dashboard');
                 }
             }
         } catch (err: any) {
-            setError(err.message || 'An unexpected error occurred');
+            toast.error(err.message || 'An unexpected error occurred');
         } finally {
             setLoading(false);
         }
@@ -77,8 +78,6 @@ export const SignupPage: FC = () => {
                 </div>
                 
                 <form onSubmit={handleSubmit} className="auth-form">
-                    {error && <div className="auth-error">{error}</div>}
-                    
                     <div className="form-group">
                         <label htmlFor="email">Email</label>
                         <input

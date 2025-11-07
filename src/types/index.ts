@@ -104,3 +104,6 @@ export interface EditorState {
     elements: EditableElement[];
     aspectRatio: string;
 }
+
+// Export repurpose types
+export * from './repurpose';

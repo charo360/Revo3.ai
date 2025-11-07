@@ -1,20 +1,27 @@
 import React, { FC, useState } from 'react';
+import { toast } from 'react-toastify';
 
 export const Newsletter: FC = () => {
     const [email, setEmail] = useState('');
     const [submitted, setSubmitted] = useState(false);
-    const [error, setError] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email || !email.includes('@')) {
-            setError('Please enter a valid email address');
+            toast.error('Please enter a valid email address');
             return;
         }
-        // TODO: Integrate with email service
-        setSubmitted(true);
-        setEmail('');
-        setError('');
+        
+        try {
+            // TODO: Integrate with email service (Supabase, SendGrid, etc.)
+            // For now, just simulate success
+            await new Promise(resolve => setTimeout(resolve, 500));
+            setSubmitted(true);
+            setEmail('');
+            toast.success('Successfully subscribed! Check your email for updates.');
+        } catch (error: any) {
+            toast.error(`Failed to subscribe: ${error.message || 'Unknown error'}`);
+        }
     };
 
     if (submitted) {
@@ -41,15 +48,11 @@ export const Newsletter: FC = () => {
                     Get the latest tips, product updates, and exclusive content delivered to your inbox.
                 </p>
                 <form onSubmit={handleSubmit} className="newsletter-form">
-                    {error && <div className="newsletter-error">{error}</div>}
                     <div className="newsletter-input-group">
                         <input
                             type="email"
                             value={email}
-                            onChange={(e) => {
-                                setEmail(e.target.value);
-                                setError('');
-                            }}
+                            onChange={(e) => setEmail(e.target.value)}
                             placeholder="Enter your email"
                             className="newsletter-input"
                             required

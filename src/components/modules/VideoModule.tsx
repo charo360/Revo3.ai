@@ -1,4 +1,5 @@
 import React, { FC, useRef, useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { VideoAsset, AnalysisResult, VeoAspectRatio, Platform } from '../../types';
 import { Module } from './Module';
 import { ICONS } from '../../constants';
@@ -31,9 +32,26 @@ export const VideoModule: FC<VideoModuleProps> = (props) => {
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            const url = URL.createObjectURL(file);
-            props.onVideoAssetChange({ id: `vid_${Date.now()}`, file, url });
-            props.onAnalysisResultChange(null);
+            try {
+                // Check file size (max 100MB for videos)
+                if (file.size > 100 * 1024 * 1024) {
+                    toast.error('Video file size must be less than 100MB');
+                    return;
+                }
+                
+                // Check file type
+                if (!file.type.startsWith('video/')) {
+                    toast.error('Please upload a valid video file');
+                    return;
+                }
+                
+                const url = URL.createObjectURL(file);
+                props.onVideoAssetChange({ id: `vid_${Date.now()}`, file, url });
+                props.onAnalysisResultChange(null);
+                toast.success('Video uploaded successfully!');
+            } catch (error: any) {
+                toast.error(`Failed to upload video: ${error.message || 'Unknown error'}`);
+            }
         }
     };
     

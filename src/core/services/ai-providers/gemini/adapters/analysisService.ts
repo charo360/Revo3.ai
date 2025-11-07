@@ -1,6 +1,6 @@
 import { GoogleGenAI, Part, Type, Modality } from "@google/genai";
-import { ImageAsset, AnalysisResult } from '../../types';
-import { VIBE_STYLES } from '../../constants';
+import { ImageAsset, AnalysisResult } from '../../../../../types';
+import { VIBE_STYLES } from '../../../../../constants';
 
 export const extractFacesFromImage = async (
     ai: GoogleGenAI, 

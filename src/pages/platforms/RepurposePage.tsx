@@ -1,21 +1,41 @@
 import React, { FC } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Navbar } from '../../components/landing/Navbar';
 import { Footer } from '../../components/landing/Footer';
+import { useAuth } from '../../contexts/AuthContext';
+import { RepurposeModule } from '../../features/content-repurpose/components/RepurposeModule';
 
 export const RepurposePage: FC = () => {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+
     return (
         <div className="landing-page">
             <Navbar />
             <div className="platform-page-content">
-                <section className="platform-hero">
-                    <div className="platform-hero-container">
-                        <div className="platform-badge">Content Repurpose</div>
-                        <h1>Turn Long Videos Into Viral Shorts</h1>
-                        <p>AI-powered video clipping that transforms your long-form content into engaging short-form videos. One long video, 10 viral clips. Create 10x faster.</p>
-                        <Link to="/signup" className="cta-button primary">Start Creating Free</Link>
+                {user ? (
+                    // Dashboard view for authenticated users
+                    <div className="repurpose-dashboard">
+                        <div className="repurpose-dashboard-header">
+                            <h1>Content Repurpose</h1>
+                            <p>Turn long videos into viral shorts with AI-powered analysis</p>
+                        </div>
+                        <RepurposeModule onResultsGenerated={(results) => {
+                            console.log('Repurpose results:', results);
+                            // Handle results (e.g., navigate to results page, show notification)
+                        }} />
                     </div>
-                </section>
+                ) : (
+                    // Landing page view for non-authenticated users
+                    <>
+                        <section className="platform-hero">
+                            <div className="platform-hero-container">
+                                <div className="platform-badge">Content Repurpose</div>
+                                <h1>Turn Long Videos Into Viral Shorts</h1>
+                                <p>AI-powered video clipping that transforms your long-form content into engaging short-form videos. One long video, 10 viral clips. Create 10x faster.</p>
+                                <Link to="/signup" className="cta-button primary">Start Creating Free</Link>
+                            </div>
+                        </section>
 
                 <section className="platform-features">
                     <div className="platform-features-container">
@@ -181,13 +201,15 @@ export const RepurposePage: FC = () => {
                     </div>
                 </section>
 
-                <section className="platform-cta">
-                    <div className="platform-cta-container">
-                        <h2>Turn Your Long Videos Into Viral Shorts Today</h2>
-                        <p>One long video, 10 viral clips. Create 10x faster with AI-powered content repurposing.</p>
-                        <Link to="/signup" className="cta-button primary large">Start Creating Free</Link>
-                    </div>
-                </section>
+                        <section className="platform-cta">
+                            <div className="platform-cta-container">
+                                <h2>Turn Your Long Videos Into Viral Shorts Today</h2>
+                                <p>One long video, 10 viral clips. Create 10x faster with AI-powered content repurposing.</p>
+                                <Link to="/signup" className="cta-button primary large">Start Creating Free</Link>
+                            </div>
+                        </section>
+                    </>
+                )}
             </div>
             <Footer />
         </div>

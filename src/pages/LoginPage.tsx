@@ -1,12 +1,12 @@
 import React, { FC, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { useAuth } from '../contexts/AuthContext';
 
 export const LoginPage: FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { signIn } = useAuth();
     const navigate = useNavigate();
@@ -15,7 +15,7 @@ export const LoginPage: FC = () => {
     React.useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('confirmed') === 'true') {
-            setError('');
+            toast.success('Email confirmed successfully! You can now sign in.');
             // Clear the query param
             window.history.replaceState({}, '', window.location.pathname);
         }
@@ -23,7 +23,6 @@ export const LoginPage: FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
         setLoading(true);
 
         try {
@@ -32,17 +31,18 @@ export const LoginPage: FC = () => {
             if (error) {
                 // Handle specific Supabase errors
                 if (error.message?.includes('Email not confirmed')) {
-                    setError('Please check your email and click the confirmation link before signing in. If you didn\'t receive the email, check your spam folder or request a new confirmation email.');
+                    toast.error('Please check your email and click the confirmation link before signing in. If you didn\'t receive the email, check your spam folder or request a new confirmation email.');
                 } else if (error.message?.includes('Invalid login credentials')) {
-                    setError('Invalid email or password. Please try again.');
+                    toast.error('Invalid email or password. Please try again.');
                 } else {
-                    setError(error.message || 'Failed to sign in');
+                    toast.error(error.message || 'Failed to sign in');
                 }
             } else {
+                toast.success('Signed in successfully!');
                 navigate('/dashboard');
             }
         } catch (err: any) {
-            setError(err.message || 'An unexpected error occurred');
+            toast.error(err.message || 'An unexpected error occurred');
         } finally {
             setLoading(false);
         }
@@ -58,8 +58,6 @@ export const LoginPage: FC = () => {
                 </div>
                 
                 <form onSubmit={handleSubmit} className="auth-form">
-                    {error && <div className="auth-error">{error}</div>}
-                    
                     <div className="form-group">
                         <label htmlFor="email">Email</label>
                         <input

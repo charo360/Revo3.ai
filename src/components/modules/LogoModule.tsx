@@ -1,8 +1,9 @@
 import React, { FC, useRef } from 'react';
+import { toast } from 'react-toastify';
 import { LogoState } from '../../types';
 import { Module } from './Module';
 import { ICONS } from '../../constants';
-import { fileToBase64 } from '../../utils/imageUtils';
+import { fileToBase64 } from '../../shared/utils/image-utils';
 
 interface LogoModuleProps {
     logo: LogoState;
@@ -15,8 +16,19 @@ export const LogoModule: FC<LogoModuleProps> = ({ logo, onLogoChange }) => {
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            const { base64, mimeType } = await fileToBase64(file);
-            onLogoChange({ ...logo, url: URL.createObjectURL(file), base64, mimeType });
+            try {
+                // Check file size (max 5MB for logos)
+                if (file.size > 5 * 1024 * 1024) {
+                    toast.error('Logo file size must be less than 5MB');
+                    return;
+                }
+                
+                const { base64, mimeType } = await fileToBase64(file);
+                onLogoChange({ ...logo, url: URL.createObjectURL(file), base64, mimeType });
+                toast.success('Logo uploaded successfully!');
+            } catch (error: any) {
+                toast.error(`Failed to upload logo: ${error.message || 'Unknown error'}`);
+            }
         }
     };
     

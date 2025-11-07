@@ -2,8 +2,13 @@ import { GoogleGenAI, Part, Modality, GenerateContentResponse } from "@google/ge
 import { 
     ImageAsset, LogoState, ColorsState, PreferencesState, Platform, 
     TextState, DesignResult 
-} from '../../types';
-import { PLATFORM_CONFIGS } from '../../constants';
+} from '../../../../../types';
+import { PLATFORM_CONFIGS } from '../../../../../constants';
+import { imageGenRateLimiter } from '../../../../infrastructure/rate-limiting';
+import { retryWithBackoff } from '../../../../infrastructure/retry-handlers';
+import { optimizeImageForAI } from '../../../../processors/image';
+import { errorTracker } from '../../../../infrastructure/error-tracking';
+import { performanceMonitor } from '../../../../infrastructure/performance-monitoring';
 
 export const generateDesign = async (
     ai: GoogleGenAI, 
@@ -16,26 +21,55 @@ export const generateDesign = async (
     originalTitle: string, 
     currentText: TextState
 ): Promise<DesignResult[]> => {
-    const platformConfig = PLATFORM_CONFIGS[platform];
-    const originalYouTubeThumbnail = images.find(img => img.id.startsWith('yt_'));
-    const userImages = images.filter(img => !img.id.startsWith('yt_'));
+    return performanceMonitor.measureFunction('generateDesign', async () => {
+        try {
+            // Rate limiting: Acquire permission before making API calls
+            await imageGenRateLimiter.acquire(`generate-${platform}`);
 
-    let finalPrompt: string;
-    const allImageParts: Part[] = [];
+            const platformConfig = PLATFORM_CONFIGS[platform];
+            const originalYouTubeThumbnail = images.find(img => img.id.startsWith('yt_'));
+            const userImages = images.filter(img => !img.id.startsWith('yt_'));
 
-    const logoPart: Part | null = (logo.base64 && logo.mimeType)
-        ? { inlineData: { data: logo.base64, mimeType: logo.mimeType } }
-        : null;
-        
-    userImages.forEach(img => allImageParts.push({ inlineData: { data: img.base64, mimeType: img.mimeType } }));
-    if (logoPart) allImageParts.push(logoPart);
+            let finalPrompt: string;
+            const allImageParts: Part[] = [];
+
+            // Optimize images before sending to API
+            const optimizedImages = await Promise.all(
+                userImages.map(async (img) => {
+                    try {
+                        const optimized = await optimizeImageForAI(img.base64, img.mimeType);
+                        return { ...img, base64: optimized.base64, mimeType: optimized.mimeType };
+                    } catch (error) {
+                        console.warn('Failed to optimize image, using original:', error);
+                        return img;
+                    }
+                })
+            );
+
+            // Optimize logo if present
+            let optimizedLogo: LogoState = logo;
+            if (logo.base64 && logo.mimeType) {
+                try {
+                    const optimized = await optimizeImageForAI(logo.base64, logo.mimeType);
+                    optimizedLogo = { ...logo, base64: optimized.base64, mimeType: optimized.mimeType };
+                } catch (error) {
+                    console.warn('Failed to optimize logo, using original:', error);
+                }
+            }
+
+            const logoPart: Part | null = (optimizedLogo.base64 && optimizedLogo.mimeType)
+                ? { inlineData: { data: optimizedLogo.base64, mimeType: optimizedLogo.mimeType } }
+                : null;
+                
+            optimizedImages.forEach(img => allImageParts.push({ inlineData: { data: img.base64, mimeType: img.mimeType } }));
+            if (logoPart) allImageParts.push(logoPart);
 
 
-    if (originalYouTubeThumbnail && platform === 'youtube_improve') {
-        let transcriptContext = transcript ? `\n**Video Transcript Context (Summary):** "${transcript.substring(0, 4000)}..."` : '';
-        let originalTitleContext = originalTitle ? `\n**Original Video Title:** "${originalTitle}"` : '';
+            if (originalYouTubeThumbnail && platform === 'youtube_improve') {
+                let transcriptContext = transcript ? `\n**Video Transcript Context (Summary):** "${transcript.substring(0, 4000)}..."` : '';
+                let originalTitleContext = originalTitle ? `\n**Original Video Title:** "${originalTitle}"` : '';
 
-        finalPrompt = `
+                finalPrompt = `
             [START OF ABSOLUTE, NON-NEGOTIABLE TECHNICAL REQUIREMENTS]
             1.  **OUTPUT ASPECT RATIO:** The generated image's aspect ratio MUST BE EXACTLY 16:9. This is the single most important rule. Failure to produce a 16:9 image means the entire task has failed.
             2.  **OUTPUT FORMAT:** The final output must be a complete, final image, not a set of instructions or a description.
@@ -77,13 +111,21 @@ export const generateDesign = async (
 
             **Final Check:** Before outputting, verify again that the aspect ratio is exactly 16:9.
         `;
-        
-        allImageParts.unshift({ inlineData: { data: originalYouTubeThumbnail.base64, mimeType: originalYouTubeThumbnail.mimeType } });
+                
+                // Optimize YouTube thumbnail
+                let optimizedThumbnail = originalYouTubeThumbnail;
+                try {
+                    const optimized = await optimizeImageForAI(originalYouTubeThumbnail.base64, originalYouTubeThumbnail.mimeType);
+                    optimizedThumbnail = { ...originalYouTubeThumbnail, base64: optimized.base64, mimeType: optimized.mimeType };
+                } catch (error) {
+                    console.warn('Failed to optimize YouTube thumbnail, using original:', error);
+                }
+                allImageParts.unshift({ inlineData: { data: optimizedThumbnail.base64, mimeType: optimizedThumbnail.mimeType } });
 
-    } else if (platform === 'podcast') {
-        const podcastSubtitle = currentText.subheadline ? `\n            *   **Tagline/Subtitle:** "${currentText.subheadline}"` : '';
+            } else if (platform === 'podcast') {
+                const podcastSubtitle = currentText.subheadline ? `\n            *   **Tagline/Subtitle:** "${currentText.subheadline}"` : '';
 
-        finalPrompt = `
+                finalPrompt = `
             [START OF ABSOLUTE, NON-NEGOTIABLE TECHNICAL REQUIREMENTS]
             1.  **OUTPUT ASPECT RATIO:** The generated image's aspect ratio MUST BE EXACTLY 1:1 (SQUARE). This is the single most important rule. Failure to produce a 1:1 square image means the entire task has failed.
             2.  **TEXT RENDERING:** All text from the Creative Brief (Podcast Title, Host Name, Tagline) MUST be rendered directly and cleanly onto the final image.
@@ -123,10 +165,10 @@ export const generateDesign = async (
 
             **Final Check:** Before outputting, verify again that the aspect ratio is exactly 1:1 (SQUARE).
         `;
-    } else if (platform === 'tiktok') {
-        const tiktokHeadline = currentText.headline ? `\n*   **Headline Hook:** "${currentText.headline}"` : '';
+            } else if (platform === 'tiktok') {
+                const tiktokHeadline = currentText.headline ? `\n*   **Headline Hook:** "${currentText.headline}"` : '';
 
-        finalPrompt = `
+                finalPrompt = `
             [START OF ABSOLUTE, NON-NEGOTIABLE TECHNICAL REQUIREMENTS]
             1.  **OUTPUT ASPECT RATIO:** The generated image's aspect ratio MUST BE EXACTLY 9:16 (VERTICAL). This is the single most important rule. Failure to produce a 9:16 image means the entire task has failed.
             2.  **TEXT RENDERING:** A headline MUST be rendered directly and cleanly onto the final image. The text must be bold, trendy, and instantly readable on a mobile device.
@@ -163,9 +205,9 @@ export const generateDesign = async (
 
             **Final Check:** Before outputting, verify again that the aspect ratio is exactly 9:16 (VERTICAL).
         `;
-    } else {
-        // Fallback for other platforms
-        finalPrompt = `
+            } else {
+                // Fallback for other platforms
+                finalPrompt = `
             [START OF ABSOLUTE, NON-NEGOTIABLE TECHNICAL REQUIREMENTS]
             1.  **OUTPUT ASPECT RATIO:** The generated image's aspect ratio MUST BE EXACTLY ${platformConfig.aspectRatio}. This is the single most important rule. Failure to produce a ${platformConfig.aspectRatio} image means the entire task has failed.
             2.  **TEXT RENDERING:** All text from the Creative Brief (Headline, Subheadline) MUST be rendered directly and cleanly onto the final image.
@@ -188,51 +230,78 @@ export const generateDesign = async (
             
             **Final Check:** Before outputting, verify again that the aspect ratio is exactly ${platformConfig.aspectRatio}.
         `;
-    }
-    
-    // The 'gemini-2.5-flash-image' model does not support multiple candidates.
-    // To generate multiple variations, we must call the API multiple times in parallel.
-    const generationPromises: Promise<GenerateContentResponse>[] = [];
+            }
+            
+            // The 'gemini-2.5-flash-image' model does not support multiple candidates.
+            // To generate multiple variations, we must call the API multiple times.
+            // Use rate limiting and retry logic for each request
+            const generationPromises: Promise<GenerateContentResponse>[] = [];
 
-    for (let i = 0; i < preferences.variations; i++) {
-        const promise = ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: { parts: [{ text: finalPrompt }, ...allImageParts] },
-            config: {
-                responseModalities: [Modality.IMAGE],
-            },
-        });
-        generationPromises.push(promise);
-    }
+            for (let i = 0; i < preferences.variations; i++) {
+                // Acquire rate limit permission for each variation
+                await imageGenRateLimiter.acquire(`generate-${platform}-variation-${i}`);
+                
+                const promise = retryWithBackoff(
+                    () => ai.models.generateContent({
+                        model: 'gemini-2.5-flash-image',
+                        contents: { parts: [{ text: finalPrompt }, ...allImageParts] },
+                        config: {
+                            responseModalities: [Modality.IMAGE],
+                        },
+                    }),
+                    {
+                        maxRetries: 2,
+                        initialDelayMs: 2000,
+                        retryableErrors: (error: any) => {
+                            // Retry on rate limit errors (429) and server errors (5xx)
+                            return error.status === 429 || (error.status >= 500 && error.status < 600);
+                        },
+                    }
+                );
+                generationPromises.push(promise);
+            }
 
-    const responses = await Promise.all(generationPromises);
+            // Process requests with limited concurrency to avoid overwhelming the API
+            const MAX_CONCURRENT = 2;
+            const responses: GenerateContentResponse[] = [];
+            
+            for (let i = 0; i < generationPromises.length; i += MAX_CONCURRENT) {
+                const batch = generationPromises.slice(i, i + MAX_CONCURRENT);
+                const batchResults = await Promise.all(batch);
+                responses.push(...batchResults);
+            }
 
-    const results: DesignResult[] = [];
-    for (const response of responses) {
-        const candidate = response.candidates?.[0];
-        if (candidate?.content?.parts) {
-            for (const part of candidate.content.parts) {
-                if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
-                    results.push({
-                        image: {
-                            id: `gen_${Date.now()}_${results.length}`,
-                            base64: part.inlineData.data,
-                            mimeType: part.inlineData.mimeType,
-                            url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
+            const results: DesignResult[] = [];
+            for (const response of responses) {
+                const candidate = response.candidates?.[0];
+                if (candidate?.content?.parts) {
+                    for (const part of candidate.content.parts) {
+                        if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
+                            results.push({
+                                image: {
+                                    id: `gen_${Date.now()}_${results.length}`,
+                                    base64: part.inlineData.data,
+                                    mimeType: part.inlineData.mimeType,
+                                    url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
+                                }
+                            });
+                            break;
                         }
-                    });
-                    break;
+                    }
                 }
             }
+
+
+            if (results.length === 0) {
+                throw new Error("The model did not return any images. Please try adjusting your prompt or inputs.");
+            }
+
+            return results;
+        } catch (error: any) {
+            errorTracker.trackAiError('generateDesign', error, finalPrompt);
+            throw error;
         }
-    }
-
-
-    if (results.length === 0) {
-        throw new Error("The model did not return any images. Please try adjusting your prompt or inputs.");
-    }
-
-    return results;
+    });
 };
 
 export const adaptImageForPlatform = async (
@@ -244,8 +313,22 @@ export const adaptImageForPlatform = async (
     colors: ColorsState, 
     preferences: PreferencesState
 ): Promise<DesignResult[]> => {
-    const targetConfig = PLATFORM_CONFIGS[targetPlatform];
-    const prompt = `
+    return performanceMonitor.measureFunction('adaptImageForPlatform', async () => {
+        try {
+            // Rate limiting
+            await imageGenRateLimiter.acquire(`adapt-${targetPlatform}`);
+    
+            // Optimize source image
+            let optimizedImage = sourceImage;
+            try {
+                const optimized = await optimizeImageForAI(sourceImage.base64, sourceImage.mimeType);
+                optimizedImage = { ...sourceImage, base64: optimized.base64, mimeType: optimized.mimeType };
+            } catch (error) {
+                console.warn('Failed to optimize source image, using original:', error);
+            }
+            
+            const targetConfig = PLATFORM_CONFIGS[targetPlatform];
+            const prompt = `
         [START OF ABSOLUTE, NON-NEGOTIABLE TECHNICAL REQUIREMENTS]
         1.  **OUTPUT ASPECT RATIO:** The generated image's aspect ratio MUST BE EXACTLY ${targetConfig.aspectRatio}. This is the single most important rule. Failure to produce a ${targetConfig.aspectRatio} image means the entire task has failed.
         2.  **NO TEXT:** DO NOT render any text on the image. This is a background adaptation task only.
@@ -260,40 +343,54 @@ export const adaptImageForPlatform = async (
         2.  **Composition for Text:** Ensure the new composition has clear, visually balanced areas where text *could* be overlaid later.
         3.  **Platform Specifics:** ${targetConfig.promptSnippet}.
         
-        **Final Check:** Before outputting, verify again that the aspect ratio is exactly ${targetConfig.aspectRatio}.
-    `;
+            **Final Check:** Before outputting, verify again that the aspect ratio is exactly ${targetConfig.aspectRatio}.
+        `;
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts: [
-            { inlineData: { data: sourceImage.base64, mimeType: sourceImage.mimeType } },
-            { text: prompt }
-        ]},
-        config: {
-            responseModalities: [Modality.IMAGE],
-        },
-    });
+            const response = await retryWithBackoff(
+                () => ai.models.generateContent({
+                    model: 'gemini-2.5-flash-image',
+                    contents: { parts: [
+                        { inlineData: { data: optimizedImage.base64, mimeType: optimizedImage.mimeType } },
+                        { text: prompt }
+                    ]},
+                    config: {
+                        responseModalities: [Modality.IMAGE],
+                    },
+                }),
+                {
+                    maxRetries: 2,
+                    initialDelayMs: 2000,
+                    retryableErrors: (error: any) => {
+                        return error.status === 429 || (error.status >= 500 && error.status < 600);
+                    },
+                }
+            );
 
-    const results: DesignResult[] = [];
-    if (response.candidates?.[0]?.content?.parts) {
-        for (const part of response.candidates[0].content.parts) {
-            if (part.inlineData) {
-                const base64 = part.inlineData.data;
-                const mimeType = part.inlineData.mimeType;
-                results.push({
-                    image: {
-                        id: `adapt_${Date.now()}`,
-                        base64,
-                        mimeType,
-                        url: `data:${mimeType};base64,${base64}`
+            const results: DesignResult[] = [];
+            if (response.candidates?.[0]?.content?.parts) {
+                for (const part of response.candidates[0].content.parts) {
+                    if (part.inlineData) {
+                        const base64 = part.inlineData.data;
+                        const mimeType = part.inlineData.mimeType;
+                        results.push({
+                            image: {
+                                id: `adapt_${Date.now()}`,
+                                base64,
+                                mimeType,
+                                url: `data:${mimeType};base64,${base64}`
+                            }
+                        });
                     }
-                });
+                }
             }
-        }
-    }
 
-    if (results.length === 0) {
-        throw new Error("Adaptation failed: The model did not return an image.");
-    }
-    return results;
+            if (results.length === 0) {
+                throw new Error("Adaptation failed: The model did not return an image.");
+            }
+            return results;
+        } catch (error: any) {
+            errorTracker.trackAiError('adaptImageForPlatform', error);
+            throw error;
+        }
+    });
 };

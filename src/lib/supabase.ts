@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClientOptions } from '@supabase/supabase-js';
 
 // Get environment variables - Vite only exposes variables with VITE_ prefix
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -16,22 +16,53 @@ if (supabaseUrl && !supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith
     console.error('❌ Invalid Supabase URL format:', supabaseUrl);
 }
 
-console.log('🔧 Initializing Supabase...');
-console.log('📍 URL:', supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'NOT SET');
-console.log('🔑 Anon Key:', supabaseAnonKey ? 'Set ✅' : 'NOT SET ❌');
+// Scalability-optimized Supabase client configuration
+const supabaseOptions: SupabaseClientOptions<'public'> = {
+    auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        // Optimize session storage
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storageKey: 'supabase.auth.token',
+        // Reduce token refresh frequency to minimize API calls
+        flowType: 'pkce',
+    },
+    // Global configuration for better scalability
+    global: {
+        headers: {
+            'x-client-info': 'revo3-ai@1.0.0',
+        },
+        // Set reasonable timeout to prevent hanging requests
+        fetch: (url, options = {}) => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+            
+            return fetch(url, {
+                ...options,
+                signal: controller.signal,
+            }).finally(() => clearTimeout(timeoutId));
+        },
+    },
+    // Database configuration
+    db: {
+        schema: 'public',
+    },
+    // Realtime configuration (disabled if not needed to reduce overhead)
+    realtime: {
+        params: {
+            eventsPerSecond: 10, // Limit realtime events
+        },
+    },
+};
 
 // Create Supabase client - will use placeholder if credentials not set
 let supabase: ReturnType<typeof createClient>;
 
 if (supabaseUrl && supabaseAnonKey) {
     try {
-        supabase = createClient(supabaseUrl, supabaseAnonKey, {
-            auth: {
-                persistSession: true,
-                autoRefreshToken: true,
-            },
-        });
-        console.log('✅ Supabase client initialized');
+        supabase = createClient(supabaseUrl, supabaseAnonKey, supabaseOptions);
+        console.log('✅ Supabase client initialized with scalability optimizations');
     } catch (error) {
         console.error('❌ Failed to initialize Supabase client:', error);
         // Fallback to placeholder
@@ -53,5 +84,6 @@ if (supabaseUrl && supabaseAnonKey) {
     );
 }
 
+// Singleton pattern to ensure single client instance
 export { supabase };
 export default supabase;
