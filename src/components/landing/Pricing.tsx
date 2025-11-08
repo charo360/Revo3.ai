@@ -84,9 +84,9 @@ export const Pricing: FC = () => {
                                     </li>
                                 ))}
                             </ul>
-                            <Link 
-                                to={plan.price === 'Custom' ? '/contact' : '/signup'} 
-                                className={`pricing-cta ${plan.popular ? 'primary' : 'secondary'}`}
+                            <Link
+                                to={plan.price === 'Custom' ? '/contact' : '/signup'}
+                                className={`cta-button ${plan.popular ? 'primary' : 'secondary'} pricing-cta`}
                             >
                                 {plan.cta}
                             </Link>

@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Navbar } from '../../components/landing/Navbar';
 import { Footer } from '../../components/landing/Footer';
 import { useAuth } from '../../contexts/AuthContext';
-import { RepurposeModule } from '../../features/content-repurpose/components/RepurposeModule';
 
 export const RepurposePage: FC = () => {
     const { user } = useAuth();
@@ -13,76 +12,64 @@ export const RepurposePage: FC = () => {
         <div className="landing-page">
             <Navbar />
             <div className="platform-page-content">
-                {user ? (
-                    // Dashboard view for authenticated users
-                    <div className="repurpose-dashboard">
-                        <div className="repurpose-dashboard-header">
-                            <h1>Content Repurpose</h1>
-                            <p>Turn long videos into viral shorts with AI-powered analysis</p>
+                <section className="platform-hero">
+                    <div className="platform-hero-container">
+                        <div className="platform-badge">Content Repurpose</div>
+                        <h1>Turn Long Videos Into Viral Campaigns</h1>
+                        <p>Find the best hooks, style them for every platform, and publish from one studio workspace.</p>
+                        <div className="platform-hero-actions">
+                            {user ? (
+                                <button
+                                    type="button"
+                                    className="cta-button primary"
+                                    onClick={() => navigate('/dashboard?view=repurpose')}
+                                >
+                                    Open in Studio
+                                </button>
+                            ) : (
+                                <>
+                                    <Link to="/signup" className="cta-button primary">Start Repurposing Free</Link>
+                                    <button
+                                        type="button"
+                                        className="cta-button secondary"
+                                        onClick={() => navigate('/login')}
+                                    >
+                                        Have access? Sign in
+                                    </button>
+                                </>
+                            )}
                         </div>
-                        <RepurposeModule onResultsGenerated={(results) => {
-                            console.log('Repurpose results:', results);
-                            // Handle results (e.g., navigate to results page, show notification)
-                        }} />
                     </div>
-                ) : (
-                    // Landing page view for non-authenticated users
-                    <>
-                        <section className="platform-hero">
-                            <div className="platform-hero-container">
-                                <div className="platform-badge">Content Repurpose</div>
-                                <h1>Turn Long Videos Into Viral Shorts</h1>
-                                <p>AI-powered video clipping that transforms your long-form content into engaging short-form videos. One long video, 10 viral clips. Create 10x faster.</p>
-                                <Link to="/signup" className="cta-button primary">Start Creating Free</Link>
-                            </div>
-                        </section>
+                </section>
 
-                <section className="platform-features">
-                    <div className="platform-features-container">
-                        <h2>Everything You Need to Create Viral Shorts</h2>
+                <section className="repurpose-benefits">
+                    <div className="repurpose-benefits-container">
+                        <h2>Built for High-Volume Short-Form Teams</h2>
                         <p className="section-subtitle">
-                            Our AI analyzes your long videos, identifies the best moments, and automatically creates engaging shorts optimized for maximum views and engagement.
+                            Repurpose lives inside Revo Studio, so your brand controls, assets, and team workflows never leave the same workspace.
                         </p>
-                        <div className="platform-features-grid">
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">🎬</div>
-                                <h3>AI Video Clipping</h3>
-                                <p>Drop a video link or upload a long video. AI automatically identifies the most engaging moments and creates viral-worthy clips in seconds.</p>
+                        <div className="repurpose-benefit-columns">
+                            <div className="repurpose-benefit-column">
+                                <div className="repurpose-benefit-header">
+                                    <h3>Automated Production</h3>
+                                    <p>Let AI handle the heavy lifting while your editors focus on finishing touches.</p>
+                                </div>
+                                <ul>
+                                    <li>🎬 AI highlight detection maps emotional peaks and quotable soundbites automatically.</li>
+                                    <li>🎞️ Instant format switching outputs 9:16, 1:1, and 16:9 clips with motion captions applied.</li>
+                                    <li>🧠 Hook, caption, and CTA suggestions tuned for each platform’s algorithms.</li>
+                                </ul>
                             </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">📱</div>
-                                <h3>Multi-Platform Format</h3>
-                                <p>Automatically resize videos for YouTube Shorts, TikTok, Instagram Reels, and more. One video, multiple platform-ready formats.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">🎯</div>
-                                <h3>Smart Scene Detection</h3>
-                                <p>AI analyzes every frame to find the most engaging moments, perfect transitions, and natural cut points for seamless clips.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">💬</div>
-                                <h3>Auto-Generated Captions</h3>
-                                <p>Automatically add animated captions with perfect timing. Edit text, style, and position to match your brand.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">🎨</div>
-                                <h3>AI Reframing & Tracking</h3>
-                                <p>Intelligent object tracking keeps your subject centered when resizing from horizontal to vertical. Manual tracking available for full control.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">⚡</div>
-                                <h3>Batch Generation</h3>
-                                <p>Generate 10+ viral clips from one long video in minutes, not hours. Test multiple variations to see what performs best.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">🎵</div>
-                                <h3>Audio Enhancement</h3>
-                                <p>AI-powered audio enhancement and voice-over capabilities. Improve audio quality or add narration automatically.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">📊</div>
-                                <h3>Virality Scoring</h3>
-                                <p>Get AI-powered predictions on which clips are most likely to go viral based on engagement patterns and trending content.</p>
+                            <div className="repurpose-benefit-column">
+                                <div className="repurpose-benefit-header">
+                                    <h3>Team-Ready Workflow</h3>
+                                    <p>Keep every collaborator aligned without exporting timelines or passing around files.</p>
+                                </div>
+                                <ul>
+                                    <li>👥 Review, approve, and comment together inside the project timeline—no downloads needed.</li>
+                                    <li>📈 Performance insights loop back to future clips so every drop gets smarter.</li>
+                                    <li>🔒 Role-based permissions, SSO, and audit logs keep security teams confident.</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -90,128 +77,103 @@ export const RepurposePage: FC = () => {
 
                 <section className="platform-how-it-works">
                     <div className="platform-how-it-works-container">
-                        <h2>Create Viral Shorts in 4 Simple Steps</h2>
-                        <p className="section-subtitle">
-                            From long video to viral shorts in minutes. No editing skills required.
-                        </p>
+                        <h2>Create Viral Shorts in Four Steps</h2>
                         <div className="platform-steps">
                             <div className="platform-step">
                                 <div className="step-number">1</div>
-                                <h3>Upload or Paste Video Link</h3>
-                                <p>Upload your long video file or paste a YouTube, Vimeo, Zoom, or other video platform URL. AI supports videos from any source.</p>
+                                <h3>Drop in Your Source</h3>
+                                <p>Upload a file or paste a link from YouTube, Zoom, Riverside, Drive, and more. Repurpose maps the highlights automatically.</p>
                             </div>
                             <div className="platform-step">
                                 <div className="step-number">2</div>
-                                <h3>AI Analyzes & Identifies Best Moments</h3>
-                                <p>Our AI analyzes your video content, transcript, and visual cues to identify the most engaging moments, perfect cuts, and viral-worthy clips.</p>
+                                <h3>Pick the Moments</h3>
+                                <p>Review AI-suggested clips, adjust timecodes, and select the hooks you want to keep with one-click approvals.</p>
                             </div>
                             <div className="platform-step">
                                 <div className="step-number">3</div>
-                                <h3>Generate Multiple Clips Instantly</h3>
-                                <p>AI automatically creates 10+ optimized shorts with captions, reframing, transitions, and strong calls-to-action. Each clip is ready to publish.</p>
+                                <h3>Style With Brand Presets</h3>
+                                <p>Apply typography, colors, and overlay templates your studio already uses. Motion captions and reframing are handled for you.</p>
                             </div>
                             <div className="platform-step">
                                 <div className="step-number">4</div>
-                                <h3>Edit, Export & Publish</h3>
-                                <p>Fine-tune clips with our editor, or export directly. Each clip is optimized for its platform - YouTube Shorts, TikTok, Instagram Reels, and more.</p>
+                                <h3>Publish Everywhere</h3>
+                                <p>Send clips to your content calendar, export for clients, or schedule posts directly—without leaving the studio.</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <section className="platform-features">
-                    <div className="platform-features-container">
-                        <h2>Supported Video Sources</h2>
-                        <p className="section-subtitle">
-                            Works with videos from any platform. Just paste the link or upload directly.
-                        </p>
-                        <div className="platform-features-grid">
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">📺</div>
-                                <h3>YouTube</h3>
-                                <p>Paste any YouTube video URL. Works with public videos, private links, and even live streams.</p>
+                <section className="repurpose-usecases">
+                    <div className="repurpose-usecases-container">
+                        <h2>Purpose-Built for Every Long-Form Source</h2>
+                        <div className="repurpose-usecase-grid">
+                            <div>
+                                <h3>🎙️ Podcasts & Interviews</h3>
+                                <p>Surface the best exchanges, add motion captions, and promote full episodes with social teasers.</p>
                             </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">💾</div>
-                                <h3>Google Drive</h3>
-                                <p>Upload videos from Google Drive. Share a link and we'll process it automatically.</p>
+                            <div>
+                                <h3>🏢 Webinars & Keynotes</h3>
+                                <p>Turn live sessions into nurture sequences, recap reels, and short-form CTA clips in hours.</p>
                             </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">📹</div>
-                                <h3>Vimeo & Zoom</h3>
-                                <p>Support for Vimeo videos and Zoom recordings. Perfect for repurposing webinars and presentations.</p>
+                            <div>
+                                <h3>🎓 Courses & Tutorials</h3>
+                                <p>Deliver bite-sized lessons, module previews, and community highlights straight from your curriculum.</p>
                             </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">🎥</div>
-                                <h3>Direct Upload</h3>
-                                <p>Upload video files directly from your device. Supports MP4, MOV, AVI, and other common formats.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">🔗</div>
-                                <h3>Riverside & StreamYard</h3>
-                                <p>Import recordings from Riverside, StreamYard, Loom, and other recording platforms.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">🌐</div>
-                                <h3>Multi-Language Support</h3>
-                                <p>Works with videos in English, Spanish, French, German, Portuguese, and 20+ more languages.</p>
+                            <div>
+                                <h3>📊 Product Demos</h3>
+                                <p>Highlight value moments, testimonials, and feature walkthroughs without reopening an editor.</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <section className="platform-features">
-                    <div className="platform-features-container">
-                        <h2>Perfect For Every Creator</h2>
-                        <p className="section-subtitle">
-                            Whether you're a YouTuber, podcaster, marketer, or business owner, turn your long content into viral shorts.
-                        </p>
-                        <div className="platform-features-grid">
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">🎬</div>
-                                <h3>YouTube Creators</h3>
-                                <p>Turn your long-form videos into YouTube Shorts. Increase watch time, reach new audiences, and grow your channel faster.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">🎙️</div>
-                                <h3>Podcasters</h3>
-                                <p>Repurpose podcast episodes into viral clips. Share the best moments on TikTok, Instagram, and YouTube to drive traffic back to full episodes.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">📊</div>
-                                <h3>Marketers</h3>
-                                <p>Create multiple short-form content pieces from webinars, presentations, and long-form marketing videos. Scale your content output.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">🏢</div>
-                                <h3>Businesses</h3>
-                                <p>Repurpose training videos, company updates, and product demos into engaging social media content. Maximize your content ROI.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">🎓</div>
-                                <h3>Educators</h3>
-                                <p>Transform long educational videos into bite-sized learning content. Perfect for social media and micro-learning platforms.</p>
-                            </div>
-                            <div className="platform-feature-card">
-                                <div className="feature-icon">📱</div>
-                                <h3>Social Media Managers</h3>
-                                <p>Create a month's worth of content from one long video. Schedule and publish across all platforms in one workflow.</p>
-                            </div>
-                        </div>
+                <section className="repurpose-testimonials">
+                    <div className="repurpose-testimonials-container">
+                        <h2>Why Teams Choose Revo Repurpose</h2>
+                        <ul>
+                            <li>
+                                <blockquote>
+                                    “We turned one 45-minute webinar into a month of short-form content in an afternoon. Everything stays tied to the campaign.”
+                                </blockquote>
+                                <cite>Growth Producer, SaaS</cite>
+                            </li>
+                            <li>
+                                <blockquote>
+                                    “Localization is finally painless—captions, hooks, and exports for every region without touching an external editor.”
+                                </blockquote>
+                                <cite>Creative Lead, Media Network</cite>
+                            </li>
+                            <li>
+                                <blockquote>
+                                    “Approvals live in one place. Clients leave timestamped notes, we ship updates in minutes, and nothing slips through email.”
+                                </blockquote>
+                                <cite>Agency Partner</cite>
+                            </li>
+                        </ul>
                     </div>
                 </section>
 
-                        <section className="platform-cta">
-                            <div className="platform-cta-container">
-                                <h2>Turn Your Long Videos Into Viral Shorts Today</h2>
-                                <p>One long video, 10 viral clips. Create 10x faster with AI-powered content repurposing.</p>
-                                <Link to="/signup" className="cta-button primary large">Start Creating Free</Link>
-                            </div>
-                        </section>
-                    </>
-                )}
+                <section className="platform-cta">
+                    <div className="platform-cta-container">
+                        <h2>Bring Repurpose Into Your Studio Workflow</h2>
+                        <p>Scale short-form campaigns without leaving the dashboard your team already uses.</p>
+                        {user ? (
+                            <button
+                                type="button"
+                                className="cta-button primary large"
+                                onClick={() => navigate('/dashboard?view=repurpose')}
+                            >
+                                Open Repurpose
+                            </button>
+                        ) : (
+                            <Link to="/signup" className="cta-button primary large">Start Repurposing Free</Link>
+                        )}
+                    </div>
+                </section>
             </div>
             <Footer />
         </div>
     );
 };
+
+

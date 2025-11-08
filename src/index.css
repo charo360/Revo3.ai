@@ -1,18 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Karla:wght@500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #111111;
-  --surface-1: #1a1a1a;
-  --surface-2: #2a2a2a;
-  --surface-3: #3a3a3a;
-  --primary: #6a5acd;
-  --primary-hover: #7b68ee;
-  --text-primary: #ffffff;
-  --text-secondary: #a0a0a0;
-  --border-color: #333333;
-  --border-radius: 8px;
+  --background: #f8f5ed;
+  --surface-1: #ffffff;
+  --surface-2: #f3ecfa;
+  --surface-3: #ebe3f7;
+  --primary: #571c86;
+  --primary-hover: #6a2d9b;
+  --text-primary: #111111;
+  --text-secondary: #5e5a67;
+  --text-tertiary: #8a8794;
+  --border-color: #e4dcf2;
+  --border-radius: 12px;
   --font-family: 'Inter', sans-serif;
 }
 
@@ -48,10 +51,10 @@ body {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--surface-1);
+  background: var(--surface-2);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--surface-3);
+  background: #d3c5ea;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -75,7 +78,7 @@ body {
 
 /* Header */
 .app-header {
-  background-color: var(--surface-1);
+  background-color: rgba(255, 255, 255, 0.9);
   border-bottom: 1px solid var(--border-color);
   padding: 0;
   display: flex;
@@ -131,7 +134,7 @@ body {
 
 .header-home-link:hover {
   background-color: var(--surface-2);
-  color: var(--text-primary);
+  color: var(--primary);
 }
 
 .header-home-link svg {
@@ -160,7 +163,7 @@ body {
 .mobile-platform-btn {
   background-color: var(--surface-2);
   border: 1px solid var(--border-color);
-  color: var(--text-primary);
+  color: var(--primary);
   padding: 8px 12px;
   border-radius: var(--border-radius);
   cursor: pointer;
@@ -242,7 +245,7 @@ body {
 
 .mobile-platform-item.active {
   background-color: var(--primary);
-  color: var(--text-primary);
+  color: var(--surface-1);
 }
 
 .mobile-platform-item svg {
@@ -309,12 +312,12 @@ body {
 
 .platform-nav-btn:hover {
   background-color: var(--surface-2);
-  color: var(--text-primary);
+  color: var(--primary);
 }
 
 .platform-nav-btn.active {
   background-color: var(--primary);
-  color: var(--text-primary);
+  color: var(--surface-1);
 }
 
 
@@ -416,7 +419,7 @@ textarea {
 
 .upload-area:hover {
   border-color: var(--primary);
-  background-color: #222;
+  background-color: #f0e8fb;
 }
 
 .upload-area p {
@@ -639,7 +642,7 @@ input[type="color"]::-moz-color-swatch {
   justify-content: center;
   text-align: center;
   color: var(--text-secondary);
-  background-color: rgba(0,0,0,0.1);
+  background-color: rgba(87, 28, 134, 0.06);
 }
 
 .canvas-placeholder svg {
@@ -913,8 +916,8 @@ input[type="color"]::-moz-color-swatch {
 }
 
 .generate-image-btn:hover:not(:disabled) {
-  background-color: #444;
-  border-color: #555;
+  background-color: #e4daf8;
+  border-color: #c8b4ec;
 }
 
 .generate-image-btn:disabled {
@@ -1500,8 +1503,8 @@ input[type="color"]::-moz-color-swatch {
     color: var(--text-secondary);
 }
 .modal-btn-secondary:hover {
-    background-color: #444;
-    color: var(--text-primary);
+  background-color: #e4daf5;
+  color: var(--primary);
 }
 
 /* Magic Studio Modal */
@@ -1705,8 +1708,8 @@ input[type="color"]::-moz-color-swatch {
     transition: all 0.2s;
 }
 .footer-tool-btn:hover {
-    background-color: #444;
-    color: var(--text-primary);
+    background-color: #e7def7;
+    color: var(--primary);
 }
 .footer-tool-btn:disabled {
     opacity: 0.4;

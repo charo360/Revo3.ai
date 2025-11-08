@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import React, { FC, useEffect, useState } from 'react';
 
 interface Testimonial {
     quote: string;
@@ -10,31 +10,58 @@ interface Testimonial {
 export const Testimonials: FC = () => {
     const testimonials: Testimonial[] = [
         {
-            quote: "With Revo3.ai, I can create professional YouTube thumbnails in seconds. The AI understands what makes designs click, and my CTR has improved by 40%.",
-            author: "Sam Newton",
-            role: "YouTuber"
+            quote: "With Revo3.ai, my team ships scroll-stopping thumbnails in minutes. It understands our brand voice and keeps our visuals consistent everywhere.",
+            author: "Amina Roberts",
+            role: "Creative Director, Culture Co",
+            image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=520&q=80"
         },
         {
-            quote: "The remarkable quality of their designs has elevated our branded marketing activities to new heights. The custom AI suggestions are a game changer.",
-            author: "Albert Mur",
-            role: "Senior Graphic Designer"
+            quote: "The AI suggestions feel like a companion editor. Revo3.ai turned my YouTube workflow into a repeatable system and boosted my weekly output.",
+            author: "Jason Cole",
+            role: "YouTube Educator",
+            image: "https://images.unsplash.com/photo-1525182008055-f88b95ff7980?auto=format&fit=crop&w=520&q=80"
         },
         {
-            quote: "An all-in-one Revo3.ai subscription takes the stress out of creating and lets me focus on what I do best - making videos I love.",
-            author: "Peter McKinnon",
-            role: "Content Creator"
+            quote: "Our campaigns stand out again. The platform’s palettes and layout cues give every asset the polish of a full design team.",
+            author: "Nia Carter",
+            role: "Senior Brand Strategist",
+            image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=520&q=80"
         },
         {
-            quote: "Revo3.ai has enabled us to elevate our content with cinematic quality designs. The platform is extensive and easy to use to find what we need.",
-            author: "John Cassaras",
-            role: "Director of Video"
+            quote: "Short-form content is everything for us. Revo3.ai automates the tedious parts so I can obsess over story instead of software.",
+            author: "Malik Thompson",
+            role: "Documentary Filmmaker",
+            image: "https://images.unsplash.com/photo-1529665253569-6d01c0eaf7b6?auto=format&fit=crop&w=520&q=80"
         },
         {
-            quote: "I've been using Revo3.ai for months. Now that everything I need is in one place, it's literally a one-stop shop for creativity!",
-            author: "Dan Mace",
-            role: "YouTuber"
+            quote: "From pitch decks to podcast art, the library of smart presets is unreal. It’s the creative wingwoman my studio didn’t know it needed.",
+            author: "Chloe Adeyemi",
+            role: "Founder, Adeyemi Studios",
+            image: "https://images.unsplash.com/photo-1524503033411-c9566986fc8f?auto=format&fit=crop&w=520&q=80"
         }
     ];
+
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const SLIDE_INTERVAL = 7000;
+
+    useEffect(() => {
+        if (testimonials.length <= 1) return;
+        const timer = setInterval(() => {
+            setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+        }, SLIDE_INTERVAL);
+
+        return () => clearInterval(timer);
+    }, [testimonials.length]);
+
+    const handlePrevious = () => {
+        setCurrentIndex((prev) =>
+            prev === 0 ? testimonials.length - 1 : prev - 1
+        );
+    };
+
+    const handleNext = () => {
+        setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+    };
 
     return (
         <section className="testimonials-section">
@@ -43,26 +70,61 @@ export const Testimonials: FC = () => {
                 <p className="section-subtitle">
                     Join thousands of creators who use Revo3.ai to create viral content that converts.
                 </p>
-                <div className="testimonials-grid">
-                    {testimonials.map((testimonial, index) => (
-                        <div key={index} className="testimonial-card">
-                            <div className="testimonial-quote">
-                                <svg className="quote-icon" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>
-                                </svg>
-                                <p>"{testimonial.quote}"</p>
-                            </div>
-                            <div className="testimonial-author">
-                                <div className="author-avatar">
-                                    {testimonial.author.charAt(0)}
+                <div className="testimonial-slider">
+                    <div
+                        className="testimonial-track"
+                        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+                    >
+                        {testimonials.map((testimonial, index) => (
+                            <article className="testimonial-slide" key={index}>
+                                <div className="testimonial-media">
+                                    <div className="testimonial-image">
+                                        <img
+                                            src={testimonial.image}
+                                            alt={`${testimonial.author} testimonial`}
+                                            loading="lazy"
+                                        />
+                                        <div className="testimonial-quote-icon">
+                                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z" />
+                                            </svg>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="author-info">
-                                    <div className="author-name">{testimonial.author}</div>
-                                    <div className="author-role">{testimonial.role}</div>
+                                <div className="testimonial-content">
+                                    <blockquote>“{testimonial.quote}”</blockquote>
+                                    <footer>
+                                        <h4>{testimonial.author}</h4>
+                                        <span>{testimonial.role}</span>
+                                    </footer>
                                 </div>
-                            </div>
-                        </div>
-                    ))}
+                            </article>
+                        ))}
+                    </div>
+                    <button
+                        className="testimonial-nav testimonial-prev"
+                        onClick={handlePrevious}
+                        aria-label="Previous testimonial"
+                    >
+                        ‹
+                    </button>
+                    <button
+                        className="testimonial-nav testimonial-next"
+                        onClick={handleNext}
+                        aria-label="Next testimonial"
+                    >
+                        ›
+                    </button>
+                    <div className="testimonial-dots">
+                        {testimonials.map((_, index) => (
+                            <button
+                                key={index}
+                                className={`testimonial-dot ${index === currentIndex ? 'active' : ''}`}
+                                onClick={() => setCurrentIndex(index)}
+                                aria-label={`Go to testimonial ${index + 1}`}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
         </section>
