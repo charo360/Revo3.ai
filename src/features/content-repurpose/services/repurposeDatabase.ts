@@ -4,13 +4,13 @@
  * Handles all database operations for repurposed videos, clips, and ML analysis
  */
 
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../../lib/supabase';
 import { 
     RepurposedVideo, 
     ViralClip, 
     MLAnalysis,
     RepurposeJob 
-} from '../../types/repurpose';
+} from '../../../types/repurpose';
 import { toast } from 'react-toastify';
 
 /**

@@ -5,26 +5,22 @@ export const Integrations: FC = () => {
         {
             name: 'YouTube',
             description: 'Connect your YouTube channel to automatically fetch thumbnails and improve CTR',
-            icon: '🎬',
-            status: 'Available'
+            icon: '🎬'
         },
         {
             name: 'TikTok',
             description: 'Generate TikTok covers directly from your video content',
-            icon: '📱',
-            status: 'Available'
+            icon: '📱'
         },
         {
             name: 'Podcast Platforms',
             description: 'Export podcast covers optimized for Apple Podcasts, Spotify, and more',
-            icon: '🎙️',
-            status: 'Available'
+            icon: '🎙️'
         },
         {
             name: 'Social Media',
             description: 'One-click export to Instagram, Twitter, Facebook, and LinkedIn',
-            icon: '🌐',
-            status: 'Available'
+            icon: '🌐'
         },
         {
             name: 'Cloud Storage',
@@ -52,7 +48,9 @@ export const Integrations: FC = () => {
                         <div key={index} className="integration-card">
                             <div className="integration-header">
                                 <div className="integration-icon">{integration.icon}</div>
-                                <div className="integration-badge">{integration.status}</div>
+                                {integration.status && integration.status !== 'Available' && (
+                                    <div className="integration-badge">{integration.status}</div>
+                                )}
                             </div>
                             <h3 className="integration-name">{integration.name}</h3>
                             <p className="integration-description">{integration.description}</p>
