@@ -43,9 +43,9 @@ export const Gallery: FC = () => {
     return (
         <section className="gallery-section">
             <div className="gallery-container">
-                <h2 className="section-title">See It In Action</h2>
+                <h2 className="section-title">Design Gallery</h2>
                 <p className="section-subtitle">
-                    Real designs created by Revo3.ai. See the difference AI makes.
+                    Browse thumbnail examples across different platforms. Each design is optimized for maximum engagement and click-through rates.
                 </p>
                 <div className="gallery-grid">
                     {galleryItems.map((item, index) => (
@@ -53,8 +53,14 @@ export const Gallery: FC = () => {
                             <div className="gallery-placeholder">
                                 <div className="gallery-platform-badge">{item.platform}</div>
                                 <div className="gallery-placeholder-content">
-                                    <div className="gallery-placeholder-icon">🎨</div>
-                                    <p>Design Preview</p>
+                                <div className="gallery-placeholder-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg>
+                                </div>
+                                <p>Design Preview</p>
                                 </div>
                             </div>
                             <div className="gallery-item-info">

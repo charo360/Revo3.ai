@@ -57,9 +57,30 @@ export const ImageModule: FC<ImageModuleProps> = ({ images, onImagesChange, onGe
         <Module icon={ICONS.IMAGE} title="Images">
             <label className="sub-label">Upload Images (Optional)</label>
             <div className="upload-area" onClick={() => fileInputRef.current?.click()}>
-                <p>Drag & drop or <span>click to browse</span></p>
+                <svg 
+                    width="64" 
+                    height="64" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    style={{ 
+                        color: 'var(--primary)', 
+                        opacity: 0.7, 
+                        marginBottom: '0.5rem' 
+                    }}
+                >
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <p>Drag & drop your images here</p>
+                <p style={{ fontSize: '0.95rem', color: 'var(--text-tertiary, #999)' }}>or <span>click to browse</span></p>
+                <p className="upload-hint">Supports JPG, PNG, WEBP up to 10MB</p>
             </div>
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" style={{ display: 'none' }} />
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" style={{ display: 'none' }} multiple />
             {images.length > 0 && (
                 <div className="image-preview-grid">
                     {images.map(image => (

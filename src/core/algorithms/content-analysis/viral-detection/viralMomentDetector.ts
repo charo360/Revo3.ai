@@ -41,6 +41,14 @@ export async function analyzeVideoForViralMoments(
 ): Promise<MLAnalysis> {
     const startTime = Date.now();
     
+    console.log('[ML Analysis] Starting viral moment detection...', {
+        videoUrl: videoUrl.substring(0, 50) + '...',
+        videoDuration,
+        hasTranscript: !!transcript,
+        hasFrames: !!frames,
+        frameCount: frames?.length || 0
+    });
+    
     // Rate limiting
     await imageGenRateLimiter.acquire('viral-moment-analysis');
 
@@ -101,7 +109,7 @@ export async function analyzeVideoForViralMoments(
 
         const processingTime = Date.now() - startTime;
 
-        return {
+        const result = {
             id: `ml_analysis_${Date.now()}`,
             repurposed_video_id: repurposedVideoId || '', // Will be set by caller
             analysis_version: '1.0.0',
@@ -114,8 +122,23 @@ export async function analyzeVideoForViralMoments(
             created_at: new Date().toISOString(),
             processing_time_ms: processingTime,
         };
+
+        console.log('[ML Analysis] Successfully completed viral moment detection', {
+            analysisId: result.id,
+            processingTimeMs: processingTime,
+            sceneCount: sceneSegments.length,
+            viralMomentsCount: viralMoments.length,
+            topViralityScore: viralMoments.length > 0 ? viralMoments[0].virality_score : 0
+        });
+
+        return result;
     } catch (error: any) {
-        console.error('Error in viral moment analysis:', error);
+        console.error('[ML Analysis] Error in viral moment analysis:', error);
+        console.error('[ML Analysis] Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
         throw new Error(`Failed to analyze video for viral moments: ${error.message}`);
     }
 }
@@ -241,10 +264,25 @@ Calculate time for each frame based on: time = (frame_index / total_frames) * vi
             }
         );
 
-        const analysis = JSON.parse(response.text);
+        // Handle response - check if response.text exists
+        let jsonString: string;
+        if (typeof response.text === 'string') {
+            jsonString = response.text.trim();
+        } else if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
+            jsonString = response.candidates[0].content.parts[0].text.trim();
+        } else {
+            throw new Error('Invalid response structure from Gemini API');
+        }
+
+        const analysis = JSON.parse(jsonString);
         return analysis as VisualFeatures;
     } catch (error: any) {
         console.error('Error analyzing visual features:', error);
+        console.error('Error details:', {
+            message: error.message,
+            response: error.response || 'No response',
+            stack: error.stack
+        });
         // Return default structure if analysis fails
         return {
             dominant_colors: [],
@@ -335,7 +373,17 @@ Return JSON array of scene segments:
             }
         );
 
-        const scenes = JSON.parse(response.text);
+        // Handle response - check if response.text exists
+        let jsonString: string;
+        if (typeof response.text === 'string') {
+            jsonString = response.text.trim();
+        } else if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
+            jsonString = response.candidates[0].content.parts[0].text.trim();
+        } else {
+            throw new Error('Invalid response structure from Gemini API');
+        }
+
+        const scenes = JSON.parse(jsonString);
         return scenes.map((scene: any, index: number) => ({
             ...scene,
             id: scene.id || `scene_${index + 1}`,
@@ -343,6 +391,11 @@ Return JSON array of scene segments:
         })) as SceneSegment[];
     } catch (error: any) {
         console.error('Error detecting scenes:', error);
+        console.error('Error details:', {
+            message: error.message,
+            response: error.response || 'No response',
+            stack: error.stack
+        });
         // Return default scene covering entire video
         return [{
             id: 'scene_1',
@@ -499,13 +552,28 @@ Return JSON:
             }
         );
 
-        const analysis = JSON.parse(response.text);
+        // Handle response - check if response.text exists
+        let jsonString: string;
+        if (typeof response.text === 'string') {
+            jsonString = response.text.trim();
+        } else if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
+            jsonString = response.candidates[0].content.parts[0].text.trim();
+        } else {
+            throw new Error('Invalid response structure from Gemini API');
+        }
+
+        const analysis = JSON.parse(jsonString);
         return {
             full_transcript: transcript,
             ...analysis
         } as TranscriptAnalysis;
     } catch (error: any) {
         console.error('Error analyzing transcript:', error);
+        console.error('Error details:', {
+            message: error.message,
+            response: error.response || 'No response',
+            stack: error.stack
+        });
         return {
             full_transcript: transcript,
             sentences: [],

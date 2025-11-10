@@ -1,12 +1,10 @@
 import React, { FC } from 'react';
 import { Navbar } from '../components/landing/Navbar';
 import { Hero } from '../components/landing/Hero';
-import { StatsSection } from '../components/landing/StatsSection';
 import { ProductShowcase } from '../components/landing/ProductShowcase';
 import { ValueProps } from '../components/landing/ValueProps';
 import { PlatformShowcase } from '../components/landing/PlatformShowcase';
 import { HowItWorks } from '../components/landing/HowItWorks';
-import { Workflow } from '../components/landing/Workflow';
 import { Gallery } from '../components/landing/Gallery';
 import { Features } from '../components/landing/Features';
 import { UseCases } from '../components/landing/UseCases';
@@ -26,12 +24,10 @@ export const LandingPage: FC = () => {
         <div className="landing-page">
             <Navbar />
             <Hero />
-            <StatsSection />
             <ProductShowcase />
             <ValueProps />
             <PlatformShowcase />
             <HowItWorks />
-            <Workflow />
             <Gallery />
             <Features />
             <UseCases />
