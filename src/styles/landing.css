@@ -1377,9 +1377,12 @@
 
 .platform-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
     margin-top: 3rem;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .platform-card {
@@ -1400,8 +1403,15 @@
 }
 
 .platform-icon {
-    font-size: 2.5rem;
+    width: 48px;
+    height: 48px;
     color: var(--primary);
+    flex-shrink: 0;
+}
+
+.platform-icon svg {
+    width: 100%;
+    height: 100%;
 }
 
 .platform-name {
@@ -1451,9 +1461,12 @@
 
 .product-showcase-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
     margin-top: 3rem;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .product-showcase-card {
@@ -1478,8 +1491,15 @@
 }
 
 .product-icon {
-    font-size: 2.5rem;
+    width: 48px;
+    height: 48px;
     color: var(--primary);
+    flex-shrink: 0;
+}
+
+.product-icon svg {
+    width: 100%;
+    height: 100%;
 }
 
 .product-title-group {
@@ -1573,10 +1593,13 @@
 
 .steps-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
     margin-top: 3rem;
     margin-bottom: 3rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .step-card {
@@ -1606,9 +1629,18 @@
 }
 
 .step-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 1rem;
     color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.step-icon svg {
+    width: 100%;
+    height: 100%;
 }
 
 .step-title {
@@ -2317,11 +2349,17 @@
 
 @media (min-width: 992px) {
     .features-grid,
-    .product-showcase-grid,
-    .platform-grid,
     .pricing-grid,
     .gallery-grid {
         grid-template-columns: repeat(3, 1fr);
+    }
+    /* Keep 2x2 for product-showcase and platform-grid */
+    .product-showcase-grid,
+    .platform-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .steps-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -2366,8 +2404,18 @@
 }
 
 .gallery-placeholder-icon {
-    font-size: 4rem;
-    margin-bottom: 0.5rem;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 0.5rem;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gallery-placeholder-icon svg {
+    width: 100%;
+    height: 100%;
 }
 
 .gallery-item-info {
@@ -3825,26 +3873,58 @@
 .upload-area {
     border: 2px dashed var(--border-color);
     border-radius: var(--border-radius);
-    padding: 3rem;
+    padding: 4rem 2rem;
+    min-height: 200px;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s;
     background: var(--surface-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    position: relative;
 }
 
 .upload-area:hover {
     border-color: var(--primary);
     background: var(--surface-3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .upload-area p {
-    margin: 1rem 0;
+    margin: 0;
     color: var(--text-secondary);
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.upload-area p:first-of-type {
+    font-size: 1.2rem;
+    margin-top: 0.5rem;
+}
+
+.upload-area svg {
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.upload-area:hover svg {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.upload-area span {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: underline;
 }
 
 .upload-hint {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--text-tertiary);
+    margin-top: 0.25rem;
 }
 
 .url-input-section {
