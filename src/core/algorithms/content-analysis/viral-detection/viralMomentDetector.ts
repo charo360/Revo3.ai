@@ -60,17 +60,25 @@ export async function analyzeVideoForViralMoments(
             videoDuration, 
             Math.min(Math.ceil(videoDuration / 2), 60) // Max 60 frames
         );
+        console.log('[ML Analysis] Step 1 complete: Frame extraction/validation', { frameCount: sampledFrames.length });
 
         // Step 2: Analyze visual features
+        console.log('[ML Analysis] Step 2 starting: Analyzing visual features...');
         const visualFeatures = await analyzeVisualFeatures(ai, sampledFrames, videoDuration);
+        console.log('[ML Analysis] Step 2 complete: Visual features analyzed');
 
         // Step 3: Analyze scenes
+        console.log('[ML Analysis] Step 3 starting: Detecting scenes...');
         const sceneSegments = await detectScenes(ai, sampledFrames, videoDuration);
+        console.log('[ML Analysis] Step 3 complete: Scene detection finished', { sceneCount: sceneSegments.length });
 
         // Step 4: Analyze audio (placeholder - would need audio extraction in production)
+        console.log('[ML Analysis] Step 4 starting: Analyzing audio...');
         const audioAnalysis = await analyzeAudio(videoUrl, videoDuration);
+        console.log('[ML Analysis] Step 4 complete: Audio analysis finished');
 
         // Step 5: Analyze transcript if available
+        console.log('[ML Analysis] Step 5 starting: Analyzing transcript...');
         let transcriptAnalysis: TranscriptAnalysis | undefined;
         if (transcript) {
             transcriptAnalysis = await analyzeTranscript(ai, transcript, videoDuration);
@@ -87,8 +95,10 @@ export async function analyzeVideoForViralMoments(
                 }
             }
         }
+        console.log('[ML Analysis] Step 5 complete: Transcript analysis finished', { hasTranscript: !!transcriptAnalysis });
 
         // Step 6: Predict engagement for different time windows
+        console.log('[ML Analysis] Step 6 starting: Predicting engagement...');
         const engagementPredictions = await predictEngagement(
             ai,
             sceneSegments,
@@ -96,8 +106,10 @@ export async function analyzeVideoForViralMoments(
             transcriptAnalysis,
             visualFeatures
         );
+        console.log('[ML Analysis] Step 6 complete: Engagement predictions finished', { predictionCount: engagementPredictions.length });
 
         // Step 7: Identify viral moments
+        console.log('[ML Analysis] Step 7 starting: Identifying viral moments...');
         const viralMoments = await identifyViralMoments(
             ai,
             sceneSegments,
@@ -106,6 +118,7 @@ export async function analyzeVideoForViralMoments(
             transcriptAnalysis,
             videoDuration
         );
+        console.log('[ML Analysis] Step 7 complete: Viral moments identified', { viralMomentCount: viralMoments.length });
 
         const processingTime = Date.now() - startTime;
 
@@ -151,7 +164,10 @@ async function analyzeVisualFeatures(
     frames: ImageAsset[],
     videoDuration: number
 ): Promise<VisualFeatures> {
+    console.log('[Visual Analysis] Starting visual feature analysis', { frameCount: frames.length, videoDuration });
+    
     // Optimize frames for AI analysis
+    console.log('[Visual Analysis] Optimizing frames for AI...');
     const optimizedFrames = await Promise.all(
         frames.map(async (frame) => {
             try {
@@ -163,11 +179,13 @@ async function analyzeVisualFeatures(
             }
         })
     );
+    console.log('[Visual Analysis] Frames optimized successfully');
 
     // Create image parts for AI
     const imageParts: Part[] = optimizedFrames.map(frame => ({
         inlineData: { data: frame.base64, mimeType: frame.mimeType }
     }));
+    console.log('[Visual Analysis] Prepared image parts for Gemini API', { partCount: imageParts.length });
 
     const prompt = `
 Analyze these video frames extracted from a ${videoDuration.toFixed(1)}-second video and provide a comprehensive visual analysis.
@@ -191,6 +209,7 @@ Return a JSON object with this structure:
 Calculate time for each frame based on: time = (frame_index / total_frames) * video_duration
 `;
 
+    console.log('[Visual Analysis] Calling Gemini API for visual feature analysis...');
     try {
         const response = await retryWithBackoff(
             () => ai.models.generateContent({
@@ -264,6 +283,8 @@ Calculate time for each frame based on: time = (frame_index / total_frames) * vi
             }
         );
 
+        console.log('[Visual Analysis] Gemini API call completed successfully');
+        
         // Handle response - check if response.text exists
         let jsonString: string;
         if (typeof response.text === 'string') {
@@ -275,15 +296,21 @@ Calculate time for each frame based on: time = (frame_index / total_frames) * vi
         }
 
         const analysis = JSON.parse(jsonString);
+        console.log('[Visual Analysis] Visual features parsed successfully', { 
+            colorCount: analysis.dominant_colors?.length,
+            brightnessPoints: analysis.brightness_levels?.length,
+            faceDetections: analysis.face_detections?.length
+        });
         return analysis as VisualFeatures;
     } catch (error: any) {
-        console.error('Error analyzing visual features:', error);
-        console.error('Error details:', {
+        console.error('[Visual Analysis] Error analyzing visual features:', error);
+        console.error('[Visual Analysis] Error details:', {
             message: error.message,
             response: error.response || 'No response',
             stack: error.stack
         });
         // Return default structure if analysis fails
+        console.warn('[Visual Analysis] Returning default visual features due to error');
         return {
             dominant_colors: [],
             brightness_levels: [],

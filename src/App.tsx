@@ -23,6 +23,7 @@ import { MagicStudioModal } from './components/modals/MagicStudioModal';
 import { PreviewModal } from './components/modals/PreviewModal';
 import { AssistantPanel } from './components/modals/AssistantPanel';
 import { Editor } from './components/modals/Editor';
+import { RepurposeModule } from './features/content-repurpose/components/RepurposeModule';
 
 declare global {
     interface AIStudio {
@@ -34,9 +35,28 @@ declare global {
     }
 }
 
-export const App: FC = () => {
+interface AppProps {
+    initialPlatform?: Platform;
+    onPlatformChange?: (platform: Platform) => void;
+}
+
+export const App: FC<AppProps> = ({ initialPlatform = 'youtube_improve', onPlatformChange }) => {
     // Input state
-    const [platform, setPlatform] = useState<Platform>('youtube_improve');
+    const [platform, setPlatform] = useState<Platform>(initialPlatform);
+    
+    // Update platform when initialPlatform prop changes
+    useEffect(() => {
+        setPlatform(initialPlatform);
+    }, [initialPlatform]);
+    
+    // Handle platform change
+    const handlePlatformChange = (newPlatform: Platform) => {
+        setPlatform(newPlatform);
+        if (onPlatformChange) {
+            onPlatformChange(newPlatform);
+        }
+    };
+    
     const [images, setImages] = useState<ImageAsset[]>([]);
     const [videoAsset, setVideoAsset] = useState<VideoAsset | null>(null);
     const [trimTimes, setTrimTimes] = useState({ start: 0, end: 1 });
@@ -445,54 +465,62 @@ export const App: FC = () => {
         <div className="app-container">
             <Header 
                 platform={platform} 
-                onPlatformChange={setPlatform}
+                onPlatformChange={handlePlatformChange}
                 onSidebarToggle={() => setIsSidebarOpen(prev => !prev)}
                 isSidebarOpen={isSidebarOpen}
             />
-            <main className="main-content">
-                {/* Mobile Sidebar Overlay */}
-                {isSidebarOpen && (
-                    <div 
-                        className="sidebar-overlay"
-                        onClick={() => setIsSidebarOpen(false)}
+            {platform === 'repurpose' ? (
+                /* Content Repurpose Module - generates short viral videos */
+                <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
+                    <RepurposeModule />
+                </div>
+            ) : (
+                /* Design Studio - generates thumbnails and images */
+                <main className="main-content">
+                    {/* Mobile Sidebar Overlay */}
+                    {isSidebarOpen && (
+                        <div 
+                            className="sidebar-overlay"
+                            onClick={() => setIsSidebarOpen(false)}
+                        />
+                    )}
+                    <Sidebar
+                        platform={platform}
+                        text={text} onTextChange={setText}
+                        images={images} onImagesChange={setImages}
+                        videoAsset={videoAsset} onVideoAssetChange={setVideoAsset}
+                        trimTimes={trimTimes} onTrimTimesChange={setTrimTimes}
+                        isAnalyzing={isAnalyzing} onAnalyzeVideo={handleAnalyzeVideo}
+                        analysisResult={analysisResult} onAnalysisResultChange={setAnalysisResult}
+                        onExtractFaces={handleExtractFaces} isExtractingFaces={isExtractingFaces}
+                        logo={logo} onLogoChange={setLogo}
+                        colors={colors} onColorsChange={setColors}
+                        preferences={preferences} onPreferencesChange={setPreferences}
+                        onGenerate={handleGenerate}
+                        isGenerating={isGenerating}
+                        onGenerateImage={handleGenerateImage}
+                        isGeneratingImage={isGeneratingImage}
+                        onGenerateVideo={handleGenerateVideo}
+                        isGeneratingVideo={isGeneratingVideo}
+                        onTranscriptChange={setYoutubeTranscript}
+                        onOriginalTitleChange={setOriginalYoutubeTitle}
+                        isOpen={isSidebarOpen}
+                        onClose={() => setIsSidebarOpen(false)}
                     />
-                )}
-                <Sidebar
-                    platform={platform}
-                    text={text} onTextChange={setText}
-                    images={images} onImagesChange={setImages}
-                    videoAsset={videoAsset} onVideoAssetChange={setVideoAsset}
-                    trimTimes={trimTimes} onTrimTimesChange={setTrimTimes}
-                    isAnalyzing={isAnalyzing} onAnalyzeVideo={handleAnalyzeVideo}
-                    analysisResult={analysisResult} onAnalysisResultChange={setAnalysisResult}
-                    onExtractFaces={handleExtractFaces} isExtractingFaces={isExtractingFaces}
-                    logo={logo} onLogoChange={setLogo}
-                    colors={colors} onColorsChange={setColors}
-                    preferences={preferences} onPreferencesChange={setPreferences}
-                    onGenerate={handleGenerate}
-                    isGenerating={isGenerating}
-                    onGenerateImage={handleGenerateImage}
-                    isGeneratingImage={isGeneratingImage}
-                    onGenerateVideo={handleGenerateVideo}
-                    isGeneratingVideo={isGeneratingVideo}
-                    onTranscriptChange={setYoutubeTranscript}
-                    onOriginalTitleChange={setOriginalYoutubeTitle}
-                    isOpen={isSidebarOpen}
-                    onClose={() => setIsSidebarOpen(false)}
-                />
-                <Canvas
-                    results={results}
-                    isGenerating={isGenerating}
-                    platform={platform}
-                    onEdit={handleOpenEditor}
-                    onAiEdit={(image) => setEditingImage(image)}
-                    onUpscale={handleUpscaleImage}
-                    onDownload={handleDownloadImage}
-                    onPreview={(image) => setPreviewingImage(image)}
-                    onAdapt={handleAdaptDesign}
-                    onAssistantToggle={() => setIsAssistantOpen(prev => !prev)}
-                />
-            </main>
+                    <Canvas
+                        results={results}
+                        isGenerating={isGenerating}
+                        platform={platform}
+                        onEdit={handleOpenEditor}
+                        onAiEdit={(image) => setEditingImage(image)}
+                        onUpscale={handleUpscaleImage}
+                        onDownload={handleDownloadImage}
+                        onPreview={(image) => setPreviewingImage(image)}
+                        onAdapt={handleAdaptDesign}
+                        onAssistantToggle={() => setIsAssistantOpen(prev => !prev)}
+                    />
+                </main>
+            )}
             {editorState && (
                 <Editor
                     initialState={editorState}
