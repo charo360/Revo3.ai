@@ -91,16 +91,29 @@ export const RepurposeModule: FC<RepurposeModuleProps> = ({ onResultsGenerated }
         setResults(null);
 
         try {
-            // Convert URL to blob if needed
+            // Convert URL to blob if needed and create a valid video URL
             let videoBlob: File | Blob;
+            let validVideoUrl: string;
+            let shouldRevokeBlobUrl = false;
+            
             if (videoFile) {
                 videoBlob = videoFile;
-            } else {
+                // Create blob URL for file uploads
+                validVideoUrl = URL.createObjectURL(videoFile);
+                shouldRevokeBlobUrl = true;
+            } else if (videoUrl) {
+                // Fetch video from URL
+                toast.info('Downloading video...');
                 const response = await fetch(videoUrl);
                 if (!response.ok) {
                     throw new Error('Failed to fetch video from URL');
                 }
                 videoBlob = await response.blob();
+                // Create blob URL from fetched blob
+                validVideoUrl = URL.createObjectURL(videoBlob);
+                shouldRevokeBlobUrl = true;
+            } else {
+                throw new Error('No video source provided');
             }
 
             // Update progress
@@ -113,22 +126,29 @@ export const RepurposeModule: FC<RepurposeModuleProps> = ({ onResultsGenerated }
             };
 
             // Run repurpose
-            const result = await repurposeVideo(
-                ai.current,
-                videoBlob,
-                videoUrl,
-                user.id,
-                options,
-                undefined, // originalTitle
-                undefined, // transcript
-                progressCallback
-            );
+            try {
+                const result = await repurposeVideo(
+                    ai.current,
+                    videoBlob,
+                    validVideoUrl, // Use the blob URL
+                    user.id,
+                    options,
+                    undefined, // originalTitle
+                    undefined, // transcript
+                    progressCallback
+                );
 
-            setProgress(100);
-            setResults(result);
-            onResultsGenerated?.(result);
-            
-            toast.success(`Successfully generated ${result.clips.length} viral clips!`);
+                setProgress(100);
+                setResults(result);
+                onResultsGenerated?.(result);
+                
+                toast.success(`Successfully generated ${result.clips.length} viral clips!`);
+            } finally {
+                // Clean up blob URL only after processing is complete
+                if (shouldRevokeBlobUrl) {
+                    URL.revokeObjectURL(validVideoUrl);
+                }
+            }
         } catch (error: any) {
             console.error('Error repurposing video:', error);
             toast.error(`Failed to repurpose video: ${error.message || 'Unknown error'}`);
@@ -348,8 +368,19 @@ export const RepurposeModule: FC<RepurposeModuleProps> = ({ onResultsGenerated }
                         {results.clips.map((clip) => (
                             <div key={clip.id} className="clip-card">
                                 <div className="clip-thumbnail">
-                                    {clip.thumbnail_url && (
-                                        <img src={clip.thumbnail_url} alt={clip.title} />
+                                    {/* Show actual video player instead of thumbnail */}
+                                    {clip.clip_url && (
+                                        <video 
+                                            src={clip.clip_url} 
+                                            controls 
+                                            preload="metadata"
+                                            style={{ 
+                                                width: '100%', 
+                                                height: '300px', 
+                                                objectFit: 'contain',
+                                                backgroundColor: '#000'
+                                            }}
+                                        />
                                     )}
                                     <div className="clip-score">
                                         🔥 {clip.virality_score}
@@ -362,12 +393,23 @@ export const RepurposeModule: FC<RepurposeModuleProps> = ({ onResultsGenerated }
                                     <div className="clip-actions">
                                         <a 
                                             href={clip.clip_url} 
-                                            download 
+                                            download={`viral-clip-${clip.platform_format}-${clip.virality_score}.mp4`}
                                             className="clip-download-btn"
                                         >
                                             Download
                                         </a>
-                                        <button className="clip-preview-btn">Preview</button>
+                                        <button 
+                                            className="clip-preview-btn"
+                                            onClick={() => {
+                                                const video = document.querySelector(`video[src="${clip.clip_url}"]`) as HTMLVideoElement;
+                                                if (video) {
+                                                    if (video.paused) video.play();
+                                                    else video.pause();
+                                                }
+                                            }}
+                                        >
+                                            Play/Pause
+                                        </button>
                                     </div>
                                 </div>
                             </div>
