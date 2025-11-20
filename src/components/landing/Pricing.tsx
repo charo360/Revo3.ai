@@ -4,27 +4,46 @@ import { Link } from 'react-router-dom';
 export const Pricing: FC = () => {
     const plans = [
         {
-            name: 'Starter',
-            price: '$9',
-            period: '/month',
-            description: 'Perfect for creators just starting out',
+            name: 'Free Starter',
+            price: '$0',
+            period: '',
+            credits: 10,
+            description: 'Perfect for trying out Revo3.ai',
             features: [
-                '50 designs per month',
+                '10 credits',
                 'All platform types',
                 'Basic AI editing',
                 'Standard resolution',
                 'Email support'
             ],
-            cta: 'Get Started',
+            cta: 'Get Started Free',
+            popular: false,
+            isFree: true
+        },
+        {
+            name: 'Starter Pack',
+            price: '$9',
+            period: ' one-time',
+            credits: 50,
+            description: 'Perfect for creators just starting out',
+            features: [
+                '50 credits',
+                'All platform types',
+                'Basic AI editing',
+                'Standard resolution',
+                'Email support'
+            ],
+            cta: 'Buy Credits',
             popular: false
         },
         {
-            name: 'Pro',
+            name: 'Pro Pack',
             price: '$29',
-            period: '/month',
+            period: ' one-time',
+            credits: 200,
             description: 'For professional content creators',
             features: [
-                '200 designs per month',
+                '200 credits',
                 'All platform types',
                 'Advanced AI editing',
                 'HD & 4K resolution',
@@ -32,16 +51,17 @@ export const Pricing: FC = () => {
                 'Custom brand integration',
                 'Bulk generation'
             ],
-            cta: 'Get Started',
+            cta: 'Buy Credits',
             popular: true
         },
         {
-            name: 'Enterprise',
-            price: 'Custom',
-            period: '',
+            name: 'Enterprise Pack',
+            price: '$99',
+            period: ' one-time',
+            credits: 1000,
             description: 'For teams and agencies',
             features: [
-                'Unlimited designs',
+                '1000 credits',
                 'All platform types',
                 'Premium AI features',
                 'Custom resolutions',
@@ -50,7 +70,7 @@ export const Pricing: FC = () => {
                 'API access',
                 'Custom integrations'
             ],
-            cta: 'Contact Sales',
+            cta: 'Buy Credits',
             popular: false
         }
     ];
@@ -60,18 +80,25 @@ export const Pricing: FC = () => {
             <div className="pricing-container">
                 <h2 className="section-title">Simple, Transparent Pricing</h2>
                 <p className="section-subtitle">
-                    Choose the plan that fits your needs. All plans include our full suite of AI design tools.
+                    Buy credits once, use them anytime. No subscriptions, no monthly fees. All plans include our full suite of AI design tools.
                 </p>
                 <div className="pricing-grid">
                     {plans.map((plan, index) => (
-                        <div key={index} className={`pricing-card ${plan.popular ? 'popular' : ''}`}>
+                        <div key={index} className={`pricing-card ${plan.popular ? 'popular' : ''} ${plan.isFree ? 'free-pack' : ''}`}>
                             {plan.popular && <div className="popular-badge">Most Popular</div>}
+                            {plan.isFree && <div className="free-badge">Free</div>}
                             <div className="pricing-header">
                                 <h3 className="plan-name">{plan.name}</h3>
                                 <div className="plan-price">
                                     <span className="price-amount">{plan.price}</span>
                                     {plan.period && <span className="price-period">{plan.period}</span>}
                                 </div>
+                                {plan.credits && (
+                                    <div className="plan-credits">
+                                        <span className="credits-amount">{plan.credits}</span>
+                                        <span className="credits-label">credits</span>
+                                    </div>
+                                )}
                                 <p className="plan-description">{plan.description}</p>
                             </div>
                             <ul className="plan-features">
@@ -85,8 +112,8 @@ export const Pricing: FC = () => {
                                 ))}
                             </ul>
                             <Link
-                                to={plan.price === 'Custom' ? '/contact' : '/signup'}
-                                className={`cta-button ${plan.popular ? 'primary' : 'secondary'} pricing-cta`}
+                                to={plan.isFree ? '/signup' : (plan.price === 'Custom' ? '/contact' : '/pricing')}
+                                className={`cta-button ${plan.popular ? 'primary' : plan.isFree ? 'primary' : 'secondary'} pricing-cta`}
                             >
                                 {plan.cta}
                             </Link>
