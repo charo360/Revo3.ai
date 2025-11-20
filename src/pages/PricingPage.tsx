@@ -7,24 +7,24 @@ import { Pricing } from '../components/landing/Pricing';
 export const PricingPage: FC = () => {
     const pricingFaqs = [
         {
-            question: 'Can I change plans later?',
-            answer: 'Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately.'
+            question: 'How do credits work?',
+            answer: 'Credits are used to generate designs and use premium features. Each thumbnail costs 1 credit, content repurposing costs 5 credits, and video generation costs 10 credits. Credits never expire, so you can use them at your own pace.'
         },
         {
-            question: 'Do you offer refunds?',
-            answer: 'We offer a 30-day money-back guarantee. If you\'re not satisfied, contact us for a full refund.'
+            question: 'Do credits expire?',
+            answer: 'No! Credits never expire. Buy them once and use them whenever you need. There\'s no rush or pressure to use them within a certain timeframe.'
         },
         {
-            question: 'What happens if I exceed my plan limits?',
-            answer: 'You can upgrade to a higher plan or purchase additional credits. We\'ll notify you before you hit your limit.'
+            question: 'What happens when I run out of credits?',
+            answer: 'You can purchase additional credit packs anytime. We\'ll notify you when your balance is low so you can top up before running out.'
         },
         {
             question: 'Are there any hidden fees?',
-            answer: 'No hidden fees. The price you see is what you pay. All plans include the features listed.'
+            answer: 'No hidden fees. The price you see is what you pay. One-time purchase, no subscriptions, no monthly charges.'
         },
         {
-            question: 'Do you offer discounts for annual plans?',
-            answer: 'Yes! Save up to 20% when you choose annual billing. The discount is automatically applied.'
+            question: 'Can I get a refund?',
+            answer: 'Yes! We offer a 30-day money-back guarantee on all credit pack purchases. If you\'re not satisfied, contact us for a full refund.'
         },
         {
             question: 'Can I use designs commercially?',
@@ -39,7 +39,7 @@ export const PricingPage: FC = () => {
                 <section className="pricing-hero">
                     <div className="pricing-hero-container">
                         <h1>The Perfect Plan for Every Creator</h1>
-                        <p>Choose the plan that fits your needs. Start free, scale as you grow.</p>
+                        <p>Buy credits once, use them anytime. No subscriptions, no monthly fees. Start free, scale as you grow.</p>
                     </div>
                 </section>
 
@@ -51,19 +51,29 @@ export const PricingPage: FC = () => {
                         <div className="comparison-table">
                             <div className="comparison-header">
                                 <div className="comparison-feature">Features</div>
-                                <div className="comparison-plan">Starter</div>
-                                <div className="comparison-plan">Pro</div>
-                                <div className="comparison-plan">Enterprise</div>
+                                <div className="comparison-plan">Free Starter</div>
+                                <div className="comparison-plan">Starter Pack</div>
+                                <div className="comparison-plan">Pro Pack</div>
+                                <div className="comparison-plan">Enterprise Pack</div>
                             </div>
                             <div className="comparison-row">
-                                <div className="comparison-feature">Designs per month</div>
+                                <div className="comparison-feature">Credits</div>
+                                <div className="comparison-plan">10</div>
                                 <div className="comparison-plan">50</div>
                                 <div className="comparison-plan">200</div>
-                                <div className="comparison-plan">Unlimited</div>
+                                <div className="comparison-plan">1000</div>
+                            </div>
+                            <div className="comparison-row">
+                                <div className="comparison-feature">Price</div>
+                                <div className="comparison-plan">Free</div>
+                                <div className="comparison-plan">$9</div>
+                                <div className="comparison-plan">$29</div>
+                                <div className="comparison-plan">$99</div>
                             </div>
                             <div className="comparison-row">
                                 <div className="comparison-feature">AI Magic Studio</div>
                                 <div className="comparison-plan">✅ Limited</div>
+                                <div className="comparison-plan">✅ Full</div>
                                 <div className="comparison-plan">✅ Full</div>
                                 <div className="comparison-plan">✅ Full</div>
                             </div>
@@ -72,9 +82,11 @@ export const PricingPage: FC = () => {
                                 <div className="comparison-plan">✅</div>
                                 <div className="comparison-plan">✅</div>
                                 <div className="comparison-plan">✅</div>
+                                <div className="comparison-plan">✅</div>
                             </div>
                             <div className="comparison-row">
                                 <div className="comparison-feature">Platform support</div>
+                                <div className="comparison-plan">All</div>
                                 <div className="comparison-plan">All</div>
                                 <div className="comparison-plan">All</div>
                                 <div className="comparison-plan">All + Custom</div>
@@ -82,11 +94,13 @@ export const PricingPage: FC = () => {
                             <div className="comparison-row">
                                 <div className="comparison-feature">Team collaboration</div>
                                 <div className="comparison-plan">❌</div>
+                                <div className="comparison-plan">❌</div>
                                 <div className="comparison-plan">✅</div>
                                 <div className="comparison-plan">✅</div>
                             </div>
                             <div className="comparison-row">
                                 <div className="comparison-feature">Priority support</div>
+                                <div className="comparison-plan">❌</div>
                                 <div className="comparison-plan">❌</div>
                                 <div className="comparison-plan">✅</div>
                                 <div className="comparison-plan">✅ 24/7</div>
