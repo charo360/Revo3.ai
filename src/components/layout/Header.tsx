@@ -302,6 +302,44 @@ export const Header: FC<HeaderProps> = ({ platform, onPlatformChange, onSidebarT
                                 {/* Menu Items */}
                                 <div style={{ padding: '8px 0' }}>
                                     <Link
+                                        to="/dashboard/credits"
+                                        className="user-menu-item-link"
+                                        onClick={() => {
+                                            console.log('Credits clicked');
+                                            setUserMenuOpen(false);
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            width: '100%',
+                                            padding: '12px 16px',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: 'var(--text-primary)',
+                                            fontSize: '14px',
+                                            fontWeight: 500,
+                                            cursor: 'pointer',
+                                            textDecoration: 'none',
+                                            transition: 'all 0.15s',
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'var(--surface-2)';
+                                            e.currentTarget.style.color = 'var(--primary)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                            e.currentTarget.style.color = 'var(--text-primary)';
+                                        }}
+                                    >
+                                        <svg style={{ width: '20px', height: '20px', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <path d="M12 6v6l4 2"></path>
+                                        </svg>
+                                        <span>Credits & Billing</span>
+                                    </Link>
+                                    
+                                    <Link
                                         to="/profile"
                                         className="user-menu-item-link"
                                         onClick={() => {

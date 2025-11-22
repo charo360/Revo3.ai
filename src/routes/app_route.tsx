@@ -54,6 +54,9 @@ const StudioPage = lazy(() =>
 const ProfilePage = lazy(() => 
   import('../pages/ProfilePage').then(m => ({ default: m.ProfilePage }))
 );
+const CreditManagementPage = lazy(() => 
+  import('../pages/CreditManagementPage').then(m => ({ default: m.CreditManagementPage }))
+);
 
 // ==================== Loading Fallback ====================
 const LoadingFallback: FC = () => (
@@ -187,6 +190,18 @@ export const AppRoutes: FC = () => {
               <ProtectedRoute>
                 <ErrorBoundary>
                   <ProfilePage />
+                </ErrorBoundary>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Credit Management Route */}
+          <Route
+            path={AppRoutePaths.creditManagement}
+            element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <CreditManagementPage />
                 </ErrorBoundary>
               </ProtectedRoute>
             }

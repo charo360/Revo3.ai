@@ -1,11 +1,14 @@
-import React, { createContext, useContext, useEffect, useState, FC } from 'react';
+import React, { createContext, useContext, useEffect, useState, FC, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { getUserCredits, CreditBalance } from '../services/payments/creditService';
 
 interface AuthContextType {
     user: User | null;
     session: Session | null;
     loading: boolean;
+    credits: CreditBalance | null;
+    refreshCredits: () => Promise<void>;
     signIn: (email: string, password: string) => Promise<{ error: any }>;
     signUp: (email: string, password: string) => Promise<{ error: any; session?: Session | null }>;
     signOut: () => Promise<void>;
@@ -17,6 +20,35 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+    const [credits, setCredits] = useState<CreditBalance | null>(null);
+    const [creditsLoading, setCreditsLoading] = useState(false);
+
+    // Refresh credits function - invalidates cache and fetches fresh data
+    const refreshCredits = useCallback(async () => {
+        if (!user?.id) {
+            setCredits(null);
+            return;
+        }
+
+        setCreditsLoading(true);
+        try {
+            // Force fresh fetch by bypassing any cache
+            const freshCredits = await getUserCredits(user.id);
+            setCredits(freshCredits);
+            
+            // Update localStorage with fresh data
+            if (freshCredits) {
+                localStorage.setItem(`credits_${user.id}`, JSON.stringify({
+                    ...freshCredits,
+                    lastUpdated: Date.now()
+                }));
+            }
+        } catch (error) {
+            console.error('Error refreshing credits:', error);
+        } finally {
+            setCreditsLoading(false);
+        }
+    }, [user?.id]);
 
     useEffect(() => {
         // Get initial session
@@ -29,14 +61,72 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
         // Listen for auth changes
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
+        } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
+            
+            // Refresh credits when user changes
+            if (session?.user?.id) {
+                await refreshCredits();
+            } else {
+                setCredits(null);
+                // Clear credits from localStorage on sign out
+                localStorage.removeItem(`credits_${session?.user?.id}`);
+            }
         });
 
         return () => subscription.unsubscribe();
-    }, []);
+    }, [refreshCredits]);
+
+    // Load credits when user is available
+    useEffect(() => {
+        if (user?.id && !creditsLoading) {
+            refreshCredits();
+        }
+    }, [user?.id, refreshCredits, creditsLoading]);
+
+    // Set up real-time subscription for credit updates
+    useEffect(() => {
+        if (!user?.id) return;
+
+        // Subscribe to credit transactions changes
+        const creditSubscription = supabase
+            .channel(`user_credits_${user.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'credit_transactions',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                async (payload) => {
+                    console.log('Credit transaction change detected:', payload);
+                    // Refresh credits when any transaction occurs
+                    await refreshCredits();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'user_credits',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                async (payload) => {
+                    console.log('User credits change detected:', payload);
+                    // Refresh credits when balance changes
+                    await refreshCredits();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            creditSubscription.unsubscribe();
+        };
+    }, [user?.id, refreshCredits]);
 
     const signIn = async (email: string, password: string) => {
         try {
@@ -129,7 +219,7 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
     };
 
     return (
-        <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+        <AuthContext.Provider value={{ user, session, loading, credits, refreshCredits, signIn, signUp, signOut }}>
             {children}
         </AuthContext.Provider>
     );

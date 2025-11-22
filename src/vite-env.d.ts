@@ -12,6 +12,8 @@ interface ImportMetaEnv {
   readonly YOUTUBE_API_KEY?: string;
   readonly RUNWAY_API_KEY?: string;
   readonly ASSEMBLYAI_API_KEY?: string;
+  readonly NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?: string;
+  readonly VITE_STRIPE_PUBLISHABLE_KEY?: string;
 }
 
 interface ImportMeta {

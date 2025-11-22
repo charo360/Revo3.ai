@@ -37,6 +37,7 @@ export const AppRoutePaths = {
   // User Routes (Protected)
   profile: "/profile",
   settings: "/settings",
+  creditManagement: "/dashboard/credits",
 };
 
 /**

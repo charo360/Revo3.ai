@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
         'process.env.RUNWAY_API_KEY': JSON.stringify(env.RUNWAY_API_KEY),
         'process.env.ASSEMBLYAI_API_KEY': JSON.stringify(env.ASSEMBLYAI_API_KEY)
       },
-      envPrefix: ['VITE_', 'SUPABASE_'],
+      envPrefix: ['VITE_', 'SUPABASE_', 'NEXT_PUBLIC_', 'STRIPE_'],
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),

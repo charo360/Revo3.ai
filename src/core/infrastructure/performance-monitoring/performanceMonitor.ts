@@ -173,9 +173,15 @@ class PerformanceMonitor {
             this.metrics.shift();
         }
 
-        // Log in development
+        // Log in development (only important metrics to reduce console noise)
         if (import.meta.env.DEV) {
-            console.log(`[Performance] ${name}: ${value}${unit}`, metadata);
+            // Only log Core Web Vitals and long tasks, not every resource load
+            const importantMetrics = ['lcp', 'fid', 'cls', 'ttfb', 'long-task', 'fn-'];
+            const shouldLog = importantMetrics.some(important => name.includes(important));
+            
+            if (shouldLog) {
+                console.log(`[Performance] ${name}: ${value}${unit}`, metadata);
+            }
         }
     }
 

@@ -81,6 +81,14 @@ export const RepurposeModule: FC<RepurposeModuleProps> = ({ onResultsGenerated }
             return;
         }
 
+        // Check credits before repurposing (content repurpose costs 2 credits)
+        const { hasEnoughCredits, deductCredits, CREDITS_PER_GENERATION } = await import('../../../services/payments/creditService');
+        const hasCredits = await hasEnoughCredits(user.id, CREDITS_PER_GENERATION);
+        if (!hasCredits) {
+            toast.error(`Insufficient credits. You need ${CREDITS_PER_GENERATION} credits to repurpose videos. Please purchase credits to continue.`);
+            return;
+        }
+
         if (!videoFile && !videoUrl) {
             toast.error('Please upload a video or provide a video URL');
             return;
@@ -141,6 +149,13 @@ export const RepurposeModule: FC<RepurposeModuleProps> = ({ onResultsGenerated }
                 setProgress(100);
                 setResults(result);
                 onResultsGenerated?.(result);
+                
+                // Deduct credits after successful repurpose
+                const { deductCredits, CREDITS_PER_GENERATION } = await import('../../../services/payments/creditService');
+                await deductCredits(user.id, 'Content Repurpose', CREDITS_PER_GENERATION, { 
+                    feature: 'content_repurpose', 
+                    clipCount: result.clips.length 
+                });
                 
                 toast.success(`Successfully generated ${result.clips.length} viral clips!`);
             } finally {
