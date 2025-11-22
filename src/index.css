@@ -21,6 +21,49 @@
   --font-family: 'Inter', sans-serif;
 }
 
+/* SweetAlert2 Custom Styling for Revo3 */
+.revo-swal-popup {
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(87, 28, 134, 0.3) !important;
+}
+
+.revo-swal-title {
+  color: #111111 !important;
+  font-weight: 700 !important;
+  font-size: 1.5rem !important;
+}
+
+.revo-swal-confirm {
+  background-color: #571c86 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 12px 24px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s !important;
+}
+
+.revo-swal-confirm:hover {
+  background-color: #6a2d9b !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(87, 28, 134, 0.4) !important;
+}
+
+.revo-swal-cancel {
+  background-color: transparent !important;
+  color: #571c86 !important;
+  border: 2px solid #571c86 !important;
+  border-radius: 8px !important;
+  padding: 12px 24px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s !important;
+}
+
+.revo-swal-cancel:hover {
+  background-color: #571c86 !important;
+  color: white !important;
+  transform: translateY(-1px) !important;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export const ProfilePage: FC = () => {
-    const { user, signOut, loading: authLoading } = useAuth();
+    const { user, signOut, loading: authLoading, credits, refreshCredits } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
@@ -19,6 +19,13 @@ export const ProfilePage: FC = () => {
             setEmail(user.email);
         }
     }, [user]);
+
+    // Refresh credits when page loads
+    useEffect(() => {
+        if (user) {
+            refreshCredits();
+        }
+    }, [user, refreshCredits]);
 
     const handleUpdateEmail = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -130,6 +137,15 @@ export const ProfilePage: FC = () => {
                                     <div className="profile-value-small">
                                         {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
                                     </div>
+                                </div>
+                                <div className="profile-info-item">
+                                    <label>Credits Balance</label>
+                                    <div className="profile-value">
+                                        {credits ? credits.balance : 'Loading...'}
+                                    </div>
+                                    <Link to="/dashboard/credits" className="profile-link">
+                                        Manage Credits →
+                                    </Link>
                                 </div>
                             </div>
                         </div>

@@ -1,7 +1,47 @@
 import React, { FC } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { redirectToCheckout } from '../../services/payments/stripeService';
+import { toast } from 'react-toastify';
 
 export const Pricing: FC = () => {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+
+    const handleBuyCredits = async (plan: typeof plans[0]) => {
+        // Free Starter pack - redirect to signup
+        if (plan.isFree) {
+            navigate('/signup');
+            return;
+        }
+
+        // Check if user is logged in
+        if (!user) {
+            toast.info('Please sign in to purchase credits');
+            navigate('/signup');
+            return;
+        }
+
+        // Map plan names to Stripe Price IDs
+        const priceIdMap: Record<string, string> = {
+            'Starter Pack': 'price_1SWEQdI1WHS4nwXdb9wSvgKl',
+            'Pro Pack': 'price_1SWEUAI1WHS4nwXduy1uQkYn',
+            'Enterprise Pack': 'price_1SWF5BI1WHS4nwXdQCv58CeN',
+        };
+
+        const priceId = priceIdMap[plan.name];
+        if (!priceId) {
+            toast.error('This pack is not available for purchase. Please contact sales.');
+            return;
+        }
+
+        try {
+            await redirectToCheckout(priceId);
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to start checkout. Please try again.');
+        }
+    };
+
     const plans = [
         {
             name: 'Free Starter',
@@ -111,12 +151,12 @@ export const Pricing: FC = () => {
                                     </li>
                                 ))}
                             </ul>
-                            <Link
-                                to={plan.isFree ? '/signup' : (plan.price === 'Custom' ? '/contact' : '/pricing')}
+                            <button
+                                onClick={() => handleBuyCredits(plan)}
                                 className={`cta-button ${plan.popular ? 'primary' : plan.isFree ? 'primary' : 'secondary'} pricing-cta`}
                             >
                                 {plan.cta}
-                            </Link>
+                            </button>
                         </div>
                     ))}
                 </div>

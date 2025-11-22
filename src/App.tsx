@@ -24,6 +24,9 @@ import { PreviewModal } from './components/modals/PreviewModal';
 import { AssistantPanel } from './components/modals/AssistantPanel';
 import { Editor } from './components/modals/Editor';
 import { RepurposeModule } from './features/content-repurpose/components/RepurposeModule';
+import { CreditManagement } from './components/dashboard/CreditManagement';
+import { useAuth } from './contexts/AuthContext';
+import { hasEnoughCredits, deductCredits, CREDITS_PER_GENERATION } from './services/payments/creditService';
 
 declare global {
     interface AIStudio {
@@ -41,6 +44,7 @@ interface AppProps {
 }
 
 export const App: FC<AppProps> = ({ initialPlatform = 'youtube_improve', onPlatformChange }) => {
+    const { user } = useAuth();
     // Input state
     const [platform, setPlatform] = useState<Platform>(initialPlatform);
     
@@ -122,6 +126,15 @@ export const App: FC<AppProps> = ({ initialPlatform = 'youtube_improve', onPlatf
     const handleGenerate = async () => {
         if (isGenerating) return;
 
+        // Check credits before generating
+        if (user) {
+            const hasCredits = await hasEnoughCredits(user.id, CREDITS_PER_GENERATION);
+            if (!hasCredits) {
+                toast.error(`Insufficient credits. You need ${CREDITS_PER_GENERATION} credits to generate designs. Please purchase credits to continue.`);
+                return;
+            }
+        }
+
         setIsGenerating(true);
         setResults([]);
         // Close sidebar on mobile after starting generation
@@ -134,6 +147,13 @@ export const App: FC<AppProps> = ({ initialPlatform = 'youtube_improve', onPlatf
             }
             const allImages = [...images, ...videoFrames];
             const results = await generateDesign(ai.current, allImages, logo, colors, preferences, platform, youtubeTranscript, originalYoutubeTitle, text);
+            
+            // Deduct credits after successful generation
+            if (user) {
+                const platformName = PLATFORM_CONFIGS[platform].title;
+                await deductCredits(user.id, `Generate ${platformName}`, CREDITS_PER_GENERATION, { platform });
+            }
+            
             setResults(results);
             toast.success('Designs generated successfully!');
         } catch (e: any) {
@@ -243,10 +263,23 @@ export const App: FC<AppProps> = ({ initialPlatform = 'youtube_improve', onPlatf
     };
 
     const handleGenerateImage = async (prompt: string, negativePrompt: string, aspectRatio: ImagenAspectRatio): Promise<ImageAsset | null> => {
+        // Check credits before generating
+        if (user) {
+            const hasCredits = await hasEnoughCredits(user.id, CREDITS_PER_GENERATION);
+            if (!hasCredits) {
+                toast.error(`Insufficient credits. You need ${CREDITS_PER_GENERATION} credits to generate images. Please purchase credits to continue.`);
+                return null;
+            }
+        }
+
         setIsGeneratingImage(true);
         try {
             const image = await generateImage(ai.current, prompt, negativePrompt, aspectRatio);
             if (image) {
+                // Deduct credits after successful generation
+                if (user) {
+                    await deductCredits(user.id, 'Generate AI Image', CREDITS_PER_GENERATION, { feature: 'image_generation', aspectRatio });
+                }
                 setImages(prev => [...prev, image]);
                 toast.success('Image generated successfully!');
             }
@@ -261,6 +294,15 @@ export const App: FC<AppProps> = ({ initialPlatform = 'youtube_improve', onPlatf
     };
 
     const handleGenerateVideo = async (prompt: string, aspectRatio: VeoAspectRatio) => {
+        // Check credits before generating (videos cost more - using 2 credits for now)
+        if (user) {
+            const hasCredits = await hasEnoughCredits(user.id, CREDITS_PER_GENERATION);
+            if (!hasCredits) {
+                toast.error(`Insufficient credits. You need ${CREDITS_PER_GENERATION} credits to generate videos. Please purchase credits to continue.`);
+                return;
+            }
+        }
+
         const hasKey = await window.aistudio.hasSelectedApiKey();
         if (!hasKey) {
             await window.aistudio.openSelectKey();
@@ -309,6 +351,11 @@ export const App: FC<AppProps> = ({ initialPlatform = 'youtube_improve', onPlatf
             const videoBlob = await videoResponse.blob();
             const videoFile = new File([videoBlob], `generated-video-${Date.now()}.mp4`, { type: 'video/mp4' });
             const videoUrl = URL.createObjectURL(videoFile);
+            
+            // Deduct credits after successful generation
+            if (user) {
+                await deductCredits(user.id, 'Generate AI Video', CREDITS_PER_GENERATION, { feature: 'video_generation', aspectRatio });
+            }
             
             setVideoAsset({
                 id: `gen_vid_${Date.now()}`,
@@ -477,6 +524,12 @@ export const App: FC<AppProps> = ({ initialPlatform = 'youtube_improve', onPlatf
             ) : (
                 /* Design Studio - generates thumbnails and images */
                 <main className="main-content">
+                    {/* Credit Management - shown after Twitter Card */}
+                    {platform === 'twitter_card' && (
+                        <div style={{ padding: '2rem 1rem', maxWidth: '1200px', margin: '0 auto' }}>
+                            <CreditManagement />
+                        </div>
+                    )}
                     {/* Mobile Sidebar Overlay */}
                     {isSidebarOpen && (
                         <div 

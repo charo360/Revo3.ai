@@ -12,11 +12,17 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@google/genai": "^1.25.0",
+    "@stripe/stripe-js": "^8.5.2",
     "@supabase/supabase-js": "^2.78.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "http-proxy-middleware": "^3.0.5",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.5",
-    "react-toastify": "^11.0.5"
+    "react-toastify": "^11.0.5",
+    "stripe": "^20.0.0",
+    "sweetalert2": "^11.26.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
