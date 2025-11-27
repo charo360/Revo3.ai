@@ -1,7 +1,24 @@
 import { ImageAsset } from '../../types';
 
+/**
+ * Check if a URL is a YouTube URL
+ */
+const isYouTubeUrl = (url: string): boolean => {
+    return url.includes('youtube.com') || url.includes('youtu.be') || url.includes('youtube.com/shorts');
+};
+
 export const extractFramesFromVideo = (videoUrl: string, startTime: number, endTime: number, frameCount: number): Promise<ImageAsset[]> => {
     return new Promise((resolve, reject) => {
+        // YouTube URLs cannot be loaded directly due to CORS restrictions
+        if (isYouTubeUrl(videoUrl)) {
+            reject(new Error(
+                "YouTube URLs cannot be loaded directly for frame extraction due to CORS restrictions. " +
+                "For YouTube videos, please use the 'Improve Thumbnail' feature which handles YouTube URLs properly, " +
+                "or download the video and upload it as a file."
+            ));
+            return;
+        }
+
         const video = document.createElement('video');
         video.preload = 'metadata';
         video.muted = true;

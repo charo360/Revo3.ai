@@ -53,12 +53,17 @@ export async function analyzeVideoForViralMoments(
     await imageGenRateLimiter.acquire('viral-moment-analysis');
 
     try {
-        // Step 1: Extract frames if not provided (sample every 2 seconds)
+        // Step 1: Extract frames if not provided (optimized sampling)
+        // Sample every 3 seconds for videos > 2 minutes, every 2 seconds otherwise
+        // Max 40 frames to reduce processing time
+        const frameInterval = videoDuration > 120 ? 3 : 2;
+        const maxFrames = Math.min(Math.ceil(videoDuration / frameInterval), 40);
+        
         const sampledFrames = frames || await extractFramesFromVideo(
             videoUrl, 
             0, 
             videoDuration, 
-            Math.min(Math.ceil(videoDuration / 2), 60) // Max 60 frames
+            maxFrames
         );
         console.log('[ML Analysis] Step 1 complete: Frame extraction/validation', { frameCount: sampledFrames.length });
 

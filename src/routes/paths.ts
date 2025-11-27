@@ -42,11 +42,12 @@ export const AppRoutePaths = {
 
 /**
  * Dashboard view to platform mapping
+ * Maps route views to their corresponding platform types
  */
 export const DashboardViewToPlatform = {
   'home': 'youtube_improve',
-  'improve-thumbnail': 'youtube_improve',
-  'youtube-thumbnail': 'youtube_improve',
+  'improve-thumbnail': 'youtube_improve',  // For improving existing thumbnails
+  'youtube-thumbnail': 'youtube',           // For creating new thumbnails from scratch
   'podcast-cover': 'podcast',
   'content-repurpose': 'repurpose',
   'twitter-card': 'twitter',
@@ -55,9 +56,11 @@ export const DashboardViewToPlatform = {
 
 /**
  * Platform to route mapping
+ * Maps platform types to their dashboard routes
  */
 export const PlatformToRoute = {
   'youtube_improve': '/dashboard/improve-thumbnail',
+  'youtube': '/dashboard/youtube-thumbnail',
   'podcast': '/dashboard/podcast-cover',
   'repurpose': '/dashboard/content-repurpose',
   'twitter': '/dashboard/twitter-card',

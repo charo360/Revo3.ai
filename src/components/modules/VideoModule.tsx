@@ -63,11 +63,15 @@ export const VideoModule: FC<VideoModuleProps> = (props) => {
 
     try {
       setVideoUrl(url);
-      if (url.includes('youtube.com') || url.includes('youtu.be')) {
-        toast.info('YouTube URL detected. Processing for frame extraction and analysis.');
-        props.onVideoAssetChange({ id: `vid_${Date.now()}`, file: null, url });
-        props.onAnalysisResultChange(null);
-        toast.success('YouTube video URL loaded!');
+      if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('youtube.com/shorts')) {
+        toast.warning(
+          'YouTube URLs cannot be loaded directly due to CORS restrictions. ' +
+          'For YouTube videos, please use the "Improve Thumbnail" feature or download and upload the video file.',
+          { autoClose: 5000 }
+        );
+        if (urlInputRef.current) urlInputRef.current.value = '';
+        setVideoUrl('');
+        return;
       } else {
         toast.info('Loading video from URL...');
         const response = await fetch(url, { method: 'GET', headers: { Accept: 'video/*' } });
@@ -141,23 +145,22 @@ export const VideoModule: FC<VideoModuleProps> = (props) => {
             </div>
           ) : (
             <>
-              <div className="relative rounded-lg overflow-hidden shadow-md border border-gray-200">
-                <video className="w-full rounded-t-lg" src={props.videoAsset.url} muted playsInline controls />
+              <div className="relative">
+                <VideoTrimmer
+                  videoUrl={props.videoAsset.url}
+                  onVideoLoad={handleVideoLoad}
+                  trimTimes={props.trimTimes}
+                  onTrimTimesChange={props.onTrimTimesChange}
+                  videoDuration={videoDuration}
+                />
                 <button
                   onClick={handleRemoveVideo}
-                  className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full w-7 h-7 flex items-center justify-center text-lg"
+                  className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg z-10 shadow-lg"
+                  title="Remove video"
                 >
                   &times;
                 </button>
               </div>
-
-              <VideoTrimmer
-                videoUrl={props.videoAsset.url}
-                onVideoLoad={handleVideoLoad}
-                trimTimes={props.trimTimes}
-                onTrimTimesChange={props.onTrimTimesChange}
-                videoDuration={videoDuration}
-              />
             </>
           )}
 
