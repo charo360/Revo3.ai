@@ -8,7 +8,6 @@ import { HowItWorks } from '../components/landing/HowItWorks';
 import { Gallery } from '../components/landing/Gallery';
 import { Features } from '../components/landing/Features';
 import { UseCases } from '../components/landing/UseCases';
-import { TrustBadges } from '../components/landing/TrustBadges';
 import { Testimonials } from '../components/landing/Testimonials';
 import { Integrations } from '../components/landing/Integrations';
 import { BusinessSection } from '../components/landing/BusinessSection';
@@ -31,7 +30,6 @@ export const LandingPage: FC = () => {
             <Gallery />
             <Features />
             <UseCases />
-            <TrustBadges />
             <Testimonials />
             <Integrations />
             <BusinessSection />

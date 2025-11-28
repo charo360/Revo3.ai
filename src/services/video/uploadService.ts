@@ -46,6 +46,14 @@ export async function uploadVideoChunked(
   console.log('[Upload] Using Edge Function for upload (no size limits)...');
   console.log('[Upload] File size:', (fileSize / (1024 * 1024)).toFixed(2), 'MB');
   
+  // Use batch upload for files < 50MB (more reliable)
+  // For larger files, use sequential chunked upload
+  if (fileSize < 50 * 1024 * 1024) {
+    console.log('[Upload] File < 50MB, using batch upload...');
+    return await uploadViaEdgeFunctionBatch(file, filePath, userId, onProgress);
+  }
+  
+  console.log('[Upload] File >= 50MB, using sequential chunked upload...');
   return await uploadViaEdgeFunction(file, filePath, userId, onProgress);
 }
 
@@ -205,6 +213,9 @@ async function uploadViaEdgeFunction(
     console.log(`[Upload] Uploading ${chunks.length} chunks...`);
     const uploadStartTime = Date.now();
     
+    let data: any = null;
+    let error: any = null;
+    
     for (let i = 0; i < chunks.length; i++) {
       const isLastChunk = i === chunks.length - 1;
       let retries = 0;
@@ -283,7 +294,7 @@ async function uploadViaEdgeFunction(
           const { data: listData, error: listError } = await supabase.storage
             .from('repurpose-videos')
             .list(userId, {
-              search: filePath.split('/').pop() || fileName
+              search: filePath.split('/').pop() || 'video.mp4'
             });
           
           if (!listError && listData && listData.length > 0) {
