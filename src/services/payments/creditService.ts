@@ -100,9 +100,21 @@ export async function getUserCredits(userId: string, forceRefresh: boolean = tru
  * Check if user has enough credits for an operation
  */
 export async function hasEnoughCredits(userId: string, creditsNeeded: number = CREDITS_PER_GENERATION): Promise<boolean> {
-    const balance = await getUserCredits(userId);
-    if (!balance) return false;
-    return balance.balance >= creditsNeeded;
+    try {
+        console.log('[hasEnoughCredits] Checking credits for user:', userId, 'needed:', creditsNeeded);
+        const balance = await getUserCredits(userId, true); // Force refresh
+        console.log('[hasEnoughCredits] Balance retrieved:', balance);
+        if (!balance) {
+            console.warn('[hasEnoughCredits] No balance found, returning false');
+            return false;
+        }
+        const hasEnough = balance.balance >= creditsNeeded;
+        console.log('[hasEnoughCredits] Result:', hasEnough, `(balance: ${balance.balance}, needed: ${creditsNeeded})`);
+        return hasEnough;
+    } catch (error) {
+        console.error('[hasEnoughCredits] Error checking credits:', error);
+        throw error;
+    }
 }
 
 /**

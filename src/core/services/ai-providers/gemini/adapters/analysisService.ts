@@ -20,6 +20,15 @@ export const extractFacesFromImage = async (
     });
 
     const results: ImageAsset[] = [];
+    
+    // Log the response for debugging
+    console.log('[extractFacesFromImage] Response received:', {
+        hasCandidates: !!response.candidates,
+        candidatesCount: response.candidates?.length || 0,
+        hasContent: !!response.candidates?.[0]?.content,
+        partsCount: response.candidates?.[0]?.content?.parts?.length || 0
+    });
+    
     if (response.candidates?.[0]?.content?.parts) {
         for (const part of response.candidates[0].content.parts) {
             if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
@@ -36,7 +45,15 @@ export const extractFacesFromImage = async (
     }
     
     if (results.length === 0) {
-        throw new Error("The model did not find any faces or failed to return cutouts.");
+        // Check if there's a finish reason or error message
+        const finishReason = response.candidates?.[0]?.finishReason;
+        const errorMessage = response.candidates?.[0]?.safetyRatings 
+            ? 'The image may contain content that violates safety policies.'
+            : finishReason === 'STOP' 
+                ? 'No faces were detected in the image. Make sure the image contains clear, visible human faces.'
+                : 'The model did not find any faces or failed to return cutouts.';
+        
+        throw new Error(errorMessage);
     }
     return results;
 };

@@ -1,0 +1,3 @@
+[upload-video]
+max_request_size = "100MB"
+timeout = 600

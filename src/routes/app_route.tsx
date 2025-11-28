@@ -30,7 +30,7 @@ const BusinessPage = lazy(() =>
   import('../pages/BusinessPage').then(m => ({ default: m.BusinessPage }))
 );
 
-// Platform Pages
+// Platform Landing Pages (Public)
 const YouTubePage = lazy(() => 
   import('../pages/platforms/YouTubePage').then(m => ({ default: m.YouTubePage }))
 );
@@ -47,7 +47,27 @@ const RepurposePage = lazy(() =>
   import('../pages/platforms/RepurposePage').then(m => ({ default: m.RepurposePage }))
 );
 
-// Protected Pages
+// Platform Studio Pages (Protected - Dashboard)
+const ImproveThumbnailPage = lazy(() => 
+  import('../pages/platforms/ImproveThumbnailPage').then(m => ({ default: m.ImproveThumbnailPage }))
+);
+const YouTubeThumbnailPage = lazy(() => 
+  import('../pages/platforms/YouTubeThumbnailPage').then(m => ({ default: m.YouTubeThumbnailPage }))
+);
+const PodcastCoverPage = lazy(() => 
+  import('../pages/platforms/PodcastCoverPage').then(m => ({ default: m.PodcastCoverPage }))
+);
+const TikTokThumbnailPage = lazy(() => 
+  import('../pages/platforms/TikTokThumbnailPage').then(m => ({ default: m.TikTokThumbnailPage }))
+);
+const TwitterCardPage = lazy(() => 
+  import('../pages/platforms/TwitterCardPage').then(m => ({ default: m.TwitterCardPage }))
+);
+const ContentRepurposePage = lazy(() => 
+  import('../pages/platforms/ContentRepurposePage').then(m => ({ default: m.ContentRepurposePage }))
+);
+
+// Legacy StudioPage (kept for backward compatibility)
 const StudioPage = lazy(() => 
   import('../pages/StudioPage').then(m => ({ default: m.StudioPage }))
 );
@@ -101,13 +121,13 @@ export const AppRoutes: FC = () => {
           <Route path={AppRoutePaths.platforms.twitter} element={<TwitterPage />} />
           <Route path={AppRoutePaths.platforms.repurpose} element={<RepurposePage />} />
 
-          {/* Protected Dashboard Routes */}
+          {/* Protected Dashboard Routes - Platform-Specific Pages */}
           <Route
             path={AppRoutePaths.dashboard.root}
             element={
               <ProtectedRoute>
                 <ErrorBoundary>
-                  <StudioPage view="home" />
+                  <ImproveThumbnailPage />
                 </ErrorBoundary>
               </ProtectedRoute>
             }
@@ -117,7 +137,7 @@ export const AppRoutes: FC = () => {
             element={
               <ProtectedRoute>
                 <ErrorBoundary>
-                  <StudioPage view="home" />
+                  <ImproveThumbnailPage />
                 </ErrorBoundary>
               </ProtectedRoute>
             }
@@ -127,7 +147,7 @@ export const AppRoutes: FC = () => {
             element={
               <ProtectedRoute>
                 <ErrorBoundary>
-                  <StudioPage view="improve-thumbnail" />
+                  <ImproveThumbnailPage />
                 </ErrorBoundary>
               </ProtectedRoute>
             }
@@ -137,7 +157,7 @@ export const AppRoutes: FC = () => {
             element={
               <ProtectedRoute>
                 <ErrorBoundary>
-                  <StudioPage view="youtube-thumbnail" />
+                  <YouTubeThumbnailPage />
                 </ErrorBoundary>
               </ProtectedRoute>
             }
@@ -147,7 +167,7 @@ export const AppRoutes: FC = () => {
             element={
               <ProtectedRoute>
                 <ErrorBoundary>
-                  <StudioPage view="podcast-cover" />
+                  <PodcastCoverPage />
                 </ErrorBoundary>
               </ProtectedRoute>
             }
@@ -157,7 +177,7 @@ export const AppRoutes: FC = () => {
             element={
               <ProtectedRoute>
                 <ErrorBoundary>
-                  <StudioPage view="content-repurpose" />
+                  <ContentRepurposePage />
                 </ErrorBoundary>
               </ProtectedRoute>
             }
@@ -167,7 +187,7 @@ export const AppRoutes: FC = () => {
             element={
               <ProtectedRoute>
                 <ErrorBoundary>
-                  <StudioPage view="twitter-card" />
+                  <TwitterCardPage />
                 </ErrorBoundary>
               </ProtectedRoute>
             }
@@ -177,7 +197,7 @@ export const AppRoutes: FC = () => {
             element={
               <ProtectedRoute>
                 <ErrorBoundary>
-                  <StudioPage view="tiktok-thumbnail" />
+                  <TikTokThumbnailPage />
                 </ErrorBoundary>
               </ProtectedRoute>
             }

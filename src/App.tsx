@@ -104,7 +104,16 @@ export const App: FC<AppProps> = ({ initialPlatform = 'youtube_improve', onPlatf
     // Mobile Sidebar State
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    const ai = useRef<GoogleGenAI>(new GoogleGenAI({ apiKey: process.env.API_KEY }));
+    // Get API key from environment variables
+    // vite.config.ts defines process.env.API_KEY from GEMINI_API_KEY env var at build time
+    // The define option in vite.config.ts replaces process.env.API_KEY with the actual value
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - process.env.API_KEY is defined in vite.config.ts via define option
+    const apiKey = process.env.API_KEY || 
+                   import.meta.env.VITE_GEMINI_API_KEY || 
+                   import.meta.env.GEMINI_API_KEY || 
+                   '';
+    const ai = useRef<GoogleGenAI>(new GoogleGenAI({ apiKey }));
     
     // Save preferences to localStorage on change
     useEffect(() => {
@@ -124,42 +133,184 @@ export const App: FC<AppProps> = ({ initialPlatform = 'youtube_improve', onPlatf
     }, []);
 
     const handleGenerate = async () => {
-        if (isGenerating) return;
+        if (isGenerating) {
+            console.log('[Generate] Already generating, ignoring click');
+            return;
+        }
 
-        // Check credits before generating
-        if (user) {
-            const hasCredits = await hasEnoughCredits(user.id, CREDITS_PER_GENERATION);
-            if (!hasCredits) {
-                toast.error(`Insufficient credits. You need ${CREDITS_PER_GENERATION} credits to generate designs. Please purchase credits to continue.`);
+        // Check if API key is available
+        // vite.config.ts defines process.env.API_KEY via define option, replacing it at build time
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - process.env.API_KEY is defined in vite.config.ts via define option
+        const currentApiKey = process.env.API_KEY || 
+                              import.meta.env.VITE_GEMINI_API_KEY || 
+                              import.meta.env.GEMINI_API_KEY || 
+                              '';
+        
+        console.log('[Generate] API key check:', { 
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            hasProcessEnv: !!process.env.API_KEY,
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            processEnvValue: process.env.API_KEY ? 
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                String(process.env.API_KEY).substring(0, 10) + '...' : 'N/A',
+            hasViteGemini: !!import.meta.env.VITE_GEMINI_API_KEY,
+            hasGemini: !!import.meta.env.GEMINI_API_KEY,
+            hasCurrentKey: !!currentApiKey,
+            currentKeyLength: currentApiKey ? currentApiKey.length : 0
+        });
+        
+        if (!currentApiKey) {
+            console.error('[Generate] API key not found in environment variables');
+            
+            // Try to use AI Studio key selection as fallback
+            if (typeof window !== 'undefined' && window.aistudio) {
+                try {
+                    const hasKey = await window.aistudio.hasSelectedApiKey();
+                    if (!hasKey) {
+                        toast.info('Please select your API key to continue...');
+                        await window.aistudio.openSelectKey();
+                        // After key selection, try again - user will need to click generate again
+                        toast.info('API key selected. Please click Generate again.');
+                        return;
+                    }
+                    // If AI Studio has a key, continue (it will be used by the SDK)
+                    console.log('[Generate] Using AI Studio selected API key');
+                } catch (studioError) {
+                    console.error('[Generate] Error checking AI Studio key:', studioError);
+                    toast.error('API key not configured. Please set GEMINI_API_KEY in your .env file or select a key in AI Studio.');
+                    return;
+                }
+            } else {
+                toast.error(
+                    'API key not configured. Please:\n' +
+                    '1. Set GEMINI_API_KEY in your .env.local file\n' +
+                    '2. Restart your dev server (npm run dev)',
+                    { autoClose: 8000 }
+                );
                 return;
             }
+        } else {
+            // Update AI instance with current API key if it changed
+            if (currentApiKey !== apiKey) {
+                console.log('[Generate] Updating AI instance with new API key');
+                ai.current = new GoogleGenAI({ apiKey: currentApiKey });
+            }
         }
+
+        console.log('[Generate] Starting generation process...', { 
+            platform, 
+            hasUser: !!user, 
+            userId: user?.id,
+            hasImages: images.length > 0,
+            hasVideo: !!videoAsset,
+            hasText: !!text.headline || !!text.subheadline,
+            hasApiKey: !!apiKey
+        });
 
         setIsGenerating(true);
         setResults([]);
         // Close sidebar on mobile after starting generation
         setIsSidebarOpen(false);
+        
+        console.log('[Generate] Set generating state to true, starting design generation...');
+
+        // Check credits before generating (after setting loading state)
+        if (user) {
+            try {
+                console.log('[Generate] Checking credits for user:', user.id);
+                const creditCheckStart = Date.now();
+                const hasCredits = await hasEnoughCredits(user.id, CREDITS_PER_GENERATION);
+                const creditCheckDuration = Date.now() - creditCheckStart;
+                console.log('[Generate] Credit check result:', hasCredits, `(took ${creditCheckDuration}ms)`);
+                if (!hasCredits) {
+                    setIsGenerating(false);
+                    toast.error(`Insufficient credits. You need ${CREDITS_PER_GENERATION} credits to generate designs. Please purchase credits to continue.`);
+                    return;
+                }
+            } catch (creditError: any) {
+                console.error('[Generate] Error checking credits:', creditError);
+                console.error('[Generate] Credit error stack:', creditError.stack);
+                setIsGenerating(false);
+                toast.error(`Error checking credits: ${creditError.message || 'Unknown error'}. Please try again.`);
+                return;
+            }
+        } else {
+            console.warn('[Generate] No user logged in, proceeding without credit check');
+        }
+        
+        console.log('[Generate] Credit check passed, proceeding to frame extraction...');
 
         try {
+            console.log('[Generate] Extracting video frames if video exists...');
             let videoFrames: ImageAsset[] = [];
             if (videoAsset) {
-                videoFrames = await extractFramesFromVideo(videoAsset.url, trimTimes.start, trimTimes.end, 3);
+                try {
+                    videoFrames = await extractFramesFromVideo(videoAsset.url, trimTimes.start, trimTimes.end, 3);
+                    console.log('[Generate] Extracted video frames:', videoFrames.length);
+                } catch (frameError: any) {
+                    const errorMessage = frameError.message || 'Unknown error';
+                    console.warn('[Generate] Frame extraction error:', errorMessage);
+                    if (errorMessage.includes('YouTube') || errorMessage.includes('CORS')) {
+                        toast.warning(
+                            'Cannot extract frames from YouTube URL. Using uploaded images only. ' +
+                            'For YouTube videos, use the "Improve Thumbnail" feature instead.',
+                            { autoClose: 5000 }
+                        );
+                        // Continue with just images, don't fail the entire generation
+                        videoFrames = [];
+                    } else {
+                        throw frameError; // Re-throw other errors
+                    }
+                }
             }
+            
             const allImages = [...images, ...videoFrames];
+            console.log('[Generate] Total images for generation:', allImages.length, { 
+                uploadedImages: images.length, 
+                videoFrames: videoFrames.length 
+            });
+            
+            console.log('[Generate] Calling generateDesign with:', {
+                platform,
+                imageCount: allImages.length,
+                hasLogo: !!logo.base64,
+                hasTranscript: !!youtubeTranscript,
+                hasOriginalTitle: !!originalYoutubeTitle,
+                headline: text.headline,
+                subheadline: text.subheadline
+            });
+            
             const results = await generateDesign(ai.current, allImages, logo, colors, preferences, platform, youtubeTranscript, originalYoutubeTitle, text);
+            
+            console.log('[Generate] Design generation completed, results:', results.length);
             
             // Deduct credits after successful generation
             if (user) {
-                const platformName = PLATFORM_CONFIGS[platform].title;
-                await deductCredits(user.id, `Generate ${platformName}`, CREDITS_PER_GENERATION, { platform });
+                try {
+                    const platformName = PLATFORM_CONFIGS[platform].title;
+                    await deductCredits(user.id, `Generate ${platformName}`, CREDITS_PER_GENERATION, { platform });
+                    console.log('[Generate] Credits deducted successfully');
+                } catch (deductError: any) {
+                    console.error('[Generate] Error deducting credits:', deductError);
+                    // Don't fail the generation if credit deduction fails, but log it
+                    toast.warning('Designs generated but there was an issue recording credit usage.');
+                }
             }
             
             setResults(results);
+            console.log('[Generate] Results set, showing success message');
             toast.success('Designs generated successfully!');
         } catch (e: any) {
-            console.error(e);
-            toast.error(`An error occurred: ${e.message || 'Failed to generate designs'}`);
+            console.error('[Generate] Error during generation:', e);
+            console.error('[Generate] Error stack:', e.stack);
+            const errorMessage = e.message || 'Failed to generate designs';
+            toast.error(`An error occurred: ${errorMessage}`);
         } finally {
+            console.log('[Generate] Setting generating state to false');
             setIsGenerating(false);
         }
     };
@@ -178,7 +329,15 @@ export const App: FC<AppProps> = ({ initialPlatform = 'youtube_improve', onPlatf
             toast.success('Video analyzed successfully!');
         } catch (e: any) {
             console.error(e);
-            toast.error(`Failed to analyze video: ${e.message || 'Unknown error'}`);
+            const errorMessage = e.message || 'Unknown error';
+            if (errorMessage.includes('YouTube') || errorMessage.includes('CORS')) {
+                toast.error(
+                    errorMessage + ' Please use the "Improve Thumbnail" feature for YouTube videos, or download and upload the video file.',
+                    { autoClose: 6000 }
+                );
+            } else {
+                toast.error(`Failed to analyze video: ${errorMessage}`);
+            }
         } finally {
             setIsAnalyzing(false);
         }
@@ -196,8 +355,21 @@ export const App: FC<AppProps> = ({ initialPlatform = 'youtube_improve', onPlatf
             setCutoutAssets(prev => [...prev, ...faces]);
             toast.success(`Extracted ${faces.length} face(s) successfully!`);
         } catch (e: any) {
-            console.error(e);
-            toast.error(`Failed to extract faces: ${e.message || 'Unknown error'}`);
+            console.error('[ExtractFaces] Error:', e);
+            const errorMessage = e.message || 'Unknown error';
+            if (errorMessage.includes('YouTube') || errorMessage.includes('CORS')) {
+                toast.error(
+                    errorMessage + ' Please use the "Improve Thumbnail" feature for YouTube videos, or download and upload the video file.',
+                    { autoClose: 6000 }
+                );
+            } else if (errorMessage.includes('No faces were detected') || errorMessage.includes('did not find any faces')) {
+                toast.warning(
+                    'No faces were detected in the video frame. Make sure the video contains clear, visible human faces.',
+                    { autoClose: 6000 }
+                );
+            } else {
+                toast.error(`Failed to extract faces: ${errorMessage}`, { autoClose: 6000 });
+            }
         } finally {
             setIsExtractingFaces(false);
         }
