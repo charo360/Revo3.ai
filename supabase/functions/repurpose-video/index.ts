@@ -109,14 +109,15 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
-  } catch (error: any) {
+    } catch (error: any) {
     console.error('[Edge Function] Error in repurpose-video function:', error);
     console.error('[Edge Function] Error stack:', error.stack);
     console.error('[Edge Function] Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    const errorMessage = error?.message || error?.toString() || 'Internal server error';
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Internal server error',
-        details: error.stack,
+        error: errorMessage,
+        details: error.stack || error.toString(),
         type: error.constructor?.name || 'UnknownError'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -188,11 +189,11 @@ async function createRepurposeJob(
       .from('repurpose_jobs')
       .update({
         status: 'failed',
-        error_message: err.message,
+        error_message: err?.message || err?.toString() || 'Unknown error',
         updated_at: new Date().toISOString(),
       })
       .eq('id', jobId)
-      .then(() => console.log(`[Edge Function] Job ${jobId} marked as failed`));
+      .then(() => console.log(`[Edge Function] Job ${jobId} marked as failed: ${err?.message || err?.toString() || 'Unknown error'}`));
   });
 
   return new Response(
@@ -299,14 +300,33 @@ async function processRepurposeJob(
         // If final file doesn't exist, try combining parts on-demand
         if (videoError || !videoData) {
           console.log('[Phase 1] Final file not found, attempting to combine parts on-demand...');
+          console.log('[Phase 1] Video ID:', videoId);
+          console.log('[Phase 1] Video error:', videoError ? (typeof videoError === 'string' ? videoError : JSON.stringify(videoError)) : 'none');
+          
+          // Wait a bit for parts to be available
+          await new Promise(r => setTimeout(r, 3000));
+          
           const combinedBuffer = await combinePartsOnDemand(supabase, videoId);
-          if (combinedBuffer) {
+          if (combinedBuffer && combinedBuffer.byteLength > 0) {
             videoBuffer = combinedBuffer;
             videoMimeType = 'video/mp4';
             console.log('[Phase 1] ✓ Parts combined on-demand:', (videoBuffer.byteLength / (1024 * 1024)).toFixed(2), 'MB');
           } else {
-            console.error('[Phase 1] Failed to combine parts on-demand');
-            throw new Error(`Failed to download video: ${videoError?.message || 'Video not found'}. Video ID: ${videoId}`);
+            console.error('[Phase 1] Failed to combine parts on-demand - no buffer returned');
+            // Try one more time with longer wait
+            console.log('[Phase 1] Retrying combination after longer wait...');
+            await new Promise(r => setTimeout(r, 5000));
+            const retryBuffer = await combinePartsOnDemand(supabase, videoId);
+            if (retryBuffer && retryBuffer.byteLength > 0) {
+              videoBuffer = retryBuffer;
+              videoMimeType = 'video/mp4';
+              console.log('[Phase 1] ✓ Parts combined on retry:', (videoBuffer.byteLength / (1024 * 1024)).toFixed(2), 'MB');
+            } else {
+              const errorMsg = videoError ? 
+                (typeof videoError === 'string' ? videoError : videoError?.message || JSON.stringify(videoError)) : 
+                'Video not found';
+              throw new Error(`Failed to download video: ${errorMsg}. Video ID: ${videoId}`);
+            }
           }
         } else {
           const videoBlob = videoData as Blob;
@@ -443,16 +463,41 @@ async function processRepurposeJob(
     });
 
   } catch (error: any) {
-    console.error('[Edge Function] Job processing error:', error);
+    console.error('[Edge Function] ===== Job processing FAILED =====');
+    console.error('[Edge Function] Job ID:', jobId);
+    console.error('[Edge Function] Error type:', error?.constructor?.name);
+    console.error('[Edge Function] Error message:', error?.message);
+    console.error('[Edge Function] Error toString:', error?.toString());
+    console.error('[Edge Function] Error stack:', error?.stack);
+    
+    // Extract meaningful error message
+    let errorMessage = 'Unknown error';
+    if (error?.message) {
+      errorMessage = String(error.message);
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error?.toString && typeof error.toString === 'function') {
+      errorMessage = error.toString();
+    } else {
+      try {
+        errorMessage = JSON.stringify(error);
+      } catch (e) {
+        errorMessage = 'Failed to serialize error';
+      }
+    }
+    
+    console.error('[Edge Function] Final error message:', errorMessage);
+    
     await supabase
       .from('repurpose_jobs')
       .update({
         status: 'failed',
-        error_message: error.message,
+        error_message: errorMessage,
         updated_at: new Date().toISOString(),
       })
       .eq('id', jobId);
-    throw error;
+    
+    console.error('[Edge Function] ===== Job marked as failed =====');
   }
 }
 
@@ -1001,40 +1046,93 @@ async function combinePartsOnDemand(
 ): Promise<ArrayBuffer | null> {
   try {
     console.log('[Combine Parts] Starting on-demand combination...');
+    console.log('[Combine Parts] Video ID:', videoId);
     const userId = videoId.split('/')[0];
     const fileName = videoId.split('/')[1];
     
-    // List parts
-    const { data: listData } = await supabase.storage
+    // List parts - parts are stored as fileName.part0, fileName.part1, etc.
+    const { data: listData, error: listError } = await supabase.storage
       .from('repurpose-videos')
       .list(userId);
     
-    const partFiles = listData?.filter(f => f.name.startsWith(fileName + '.part')) || [];
-    if (partFiles.length === 0) {
-      console.log('[Combine Parts] No parts found');
+    if (listError) {
+      console.error('[Combine Parts] Failed to list files:', listError.message);
       return null;
     }
     
-    console.log(`[Combine Parts] Found ${partFiles.length} parts, downloading...`);
+    console.log(`[Combine Parts] Listed ${listData?.length || 0} files in folder`);
+    console.log(`[Combine Parts] Looking for parts matching: ${fileName}.part*`);
+    console.log(`[Combine Parts] Available files:`, listData?.map(f => f.name).join(', ') || 'none');
+    
+    // Filter for parts matching the pattern: fileName.part{N}
+    // Parts are named like: video.mp4.part0, video.mp4.part1, etc.
+    // Try multiple matching strategies
+    let partFiles = listData?.filter(f => {
+      // Strategy 1: Exact match - fileName.part{N}
+      const baseName = f.name.split('.part')[0];
+      if (baseName === fileName && /\.part\d+$/.test(f.name)) {
+        return true;
+      }
+      return false;
+    }) || [];
+    
+    // Strategy 2: If no exact matches, try partial match (in case fileName has extra chars)
+    if (partFiles.length === 0) {
+      console.log('[Combine Parts] No exact matches, trying partial match...');
+      partFiles = listData?.filter(f => {
+        // Check if filename contains our fileName and has .part pattern
+        return f.name.includes(fileName) && f.name.includes('.part') && /\.part\d+$/.test(f.name);
+      }) || [];
+    }
+    
+    // Log found parts
+    if (partFiles.length > 0) {
+      console.log(`[Combine Parts] Found ${partFiles.length} matching parts:`);
+      partFiles.forEach(f => console.log(`  - ${f.name}`));
+    }
+    
+    if (partFiles.length === 0) {
+      console.log('[Combine Parts] No parts found. Available files:', listData?.map(f => f.name).join(', ') || 'none');
+      return null;
+    }
+    
+    console.log(`[Combine Parts] Found ${partFiles.length} parts:`, partFiles.map(f => f.name).join(', '));
     
     // Download all parts
     const parts: Array<{ index: number; data: Uint8Array }> = [];
     for (const partFile of partFiles) {
-      const partIndex = parseInt(partFile.name.split('.part')[1] || '0');
+      // Extract part index from filename like "video.mp4.part0" -> 0
+      const partMatch = partFile.name.match(/\.part(\d+)$/);
+      const partIndex = partMatch ? parseInt(partMatch[1]) : 0;
       const partPath = `${userId}/${partFile.name}`;
       
-      const { data, error } = await supabase.storage
-        .from('repurpose-videos')
-        .download(partPath);
+      console.log(`[Combine Parts] Downloading part ${partIndex} from ${partPath}...`);
       
-      if (!error && data) {
-        const arrayBuffer = await data.arrayBuffer();
-        parts.push({ index: partIndex, data: new Uint8Array(arrayBuffer) });
-        console.log(`[Combine Parts] Downloaded part ${partIndex + 1}`);
+      let retries = 3;
+      while (retries > 0) {
+        const { data, error } = await supabase.storage
+          .from('repurpose-videos')
+          .download(partPath);
+        
+        if (!error && data) {
+          const arrayBuffer = await data.arrayBuffer();
+          parts.push({ index: partIndex, data: new Uint8Array(arrayBuffer) });
+          console.log(`[Combine Parts] ✓ Downloaded part ${partIndex} (${(arrayBuffer.byteLength / (1024 * 1024)).toFixed(2)}MB)`);
+          break;
+        }
+        
+        retries--;
+        if (retries > 0) {
+          console.log(`[Combine Parts] Retrying part ${partIndex}... (${retries} retries left)`);
+          await new Promise(r => setTimeout(r, 1000));
+        } else {
+          console.error(`[Combine Parts] ✗ Failed to download part ${partIndex}:`, error?.message || 'Unknown error');
+        }
       }
     }
     
     if (parts.length === 0) {
+      console.error('[Combine Parts] No parts downloaded successfully');
       return null;
     }
     
@@ -1052,6 +1150,7 @@ async function combinePartsOnDemand(
     return combined.buffer;
   } catch (error: any) {
     console.error('[Combine Parts] Failed:', error.message);
+    console.error('[Combine Parts] Stack:', error.stack);
     return null;
   }
 }
