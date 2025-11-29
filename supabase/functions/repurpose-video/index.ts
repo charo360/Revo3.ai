@@ -259,20 +259,26 @@ async function processRepurposeJob(
       if (videoUrl && (videoUrl.startsWith('http://') || videoUrl.startsWith('https://'))) {
         console.log('[Phase 1] Video URL provided, trying direct download from:', videoUrl.substring(0, 100));
         try {
+          // Try with longer timeout for large files
           const response = await fetch(videoUrl, {
-            signal: AbortSignal.timeout(60000) // 60s timeout
+            signal: AbortSignal.timeout(120000) // 120s timeout for large files
           });
           if (response.ok) {
             const contentLength = response.headers.get('content-length');
             console.log('[Phase 1] Direct download response OK, content-length:', contentLength);
-            videoBuffer = await response.arrayBuffer();
-            videoMimeType = response.headers.get('content-type') || 'video/mp4';
-            console.log('[Phase 1] Video downloaded directly from URL:', (videoBuffer.byteLength / (1024 * 1024)).toFixed(2), 'MB');
+            const arrayBuffer = await response.arrayBuffer();
+            if (arrayBuffer && arrayBuffer.byteLength > 0) {
+              videoBuffer = arrayBuffer;
+              videoMimeType = response.headers.get('content-type') || 'video/mp4';
+              console.log('[Phase 1] ✓ Video downloaded directly from URL:', (videoBuffer.byteLength / (1024 * 1024)).toFixed(2), 'MB');
+            } else {
+              console.log('[Phase 1] Direct download returned empty buffer');
+            }
           } else {
-            console.log('[Phase 1] Direct URL download failed with status:', response.status);
+            console.log('[Phase 1] Direct URL download failed with status:', response.status, response.statusText);
           }
         } catch (fetchError: any) {
-          console.log('[Phase 1] Direct URL fetch failed:', fetchError.message);
+          console.log('[Phase 1] Direct URL fetch failed:', fetchError?.message || fetchError?.toString() || 'Unknown error');
         }
       }
       
@@ -301,10 +307,11 @@ async function processRepurposeJob(
         if (videoError || !videoData) {
           console.log('[Phase 1] Final file not found, attempting to combine parts on-demand...');
           console.log('[Phase 1] Video ID:', videoId);
-          console.log('[Phase 1] Video error:', videoError ? (typeof videoError === 'string' ? videoError : JSON.stringify(videoError)) : 'none');
+          console.log('[Phase 1] Video error:', videoError ? (typeof videoError === 'string' ? videoError : (videoError?.message || JSON.stringify(videoError))) : 'none');
           
-          // Wait a bit for parts to be available
-          await new Promise(r => setTimeout(r, 3000));
+          // Wait a bit for parts to be available (chunks might still be uploading)
+          console.log('[Phase 1] Waiting 5s for parts to be available...');
+          await new Promise(r => setTimeout(r, 5000));
           
           const combinedBuffer = await combinePartsOnDemand(supabase, videoId);
           if (combinedBuffer && combinedBuffer.byteLength > 0) {
@@ -314,18 +321,38 @@ async function processRepurposeJob(
           } else {
             console.error('[Phase 1] Failed to combine parts on-demand - no buffer returned');
             // Try one more time with longer wait
-            console.log('[Phase 1] Retrying combination after longer wait...');
-            await new Promise(r => setTimeout(r, 5000));
+            console.log('[Phase 1] Retrying combination after 10s wait...');
+            await new Promise(r => setTimeout(r, 10000));
             const retryBuffer = await combinePartsOnDemand(supabase, videoId);
             if (retryBuffer && retryBuffer.byteLength > 0) {
               videoBuffer = retryBuffer;
               videoMimeType = 'video/mp4';
               console.log('[Phase 1] ✓ Parts combined on retry:', (videoBuffer.byteLength / (1024 * 1024)).toFixed(2), 'MB');
             } else {
-              const errorMsg = videoError ? 
-                (typeof videoError === 'string' ? videoError : videoError?.message || JSON.stringify(videoError)) : 
-                'Video not found';
-              throw new Error(`Failed to download video: ${errorMsg}. Video ID: ${videoId}`);
+              // Last resort: try direct URL again (might work even if file isn't fully combined)
+              if (videoUrl && (videoUrl.startsWith('http://') || videoUrl.startsWith('https://'))) {
+                console.log('[Phase 1] Last resort: trying direct URL download again...');
+                try {
+                  const response = await fetch(videoUrl, { signal: AbortSignal.timeout(120000) });
+                  if (response.ok) {
+                    const arrayBuffer = await response.arrayBuffer();
+                    if (arrayBuffer && arrayBuffer.byteLength > 0) {
+                      videoBuffer = arrayBuffer;
+                      videoMimeType = response.headers.get('content-type') || 'video/mp4';
+                      console.log('[Phase 1] ✓ Video downloaded from direct URL (last resort):', (videoBuffer.byteLength / (1024 * 1024)).toFixed(2), 'MB');
+                    }
+                  }
+                } catch (e) {
+                  console.error('[Phase 1] Direct URL also failed:', e?.message || e?.toString());
+                }
+              }
+              
+              if (!videoBuffer || videoBuffer.byteLength === 0) {
+                const errorMsg = videoError ? 
+                  (typeof videoError === 'string' ? videoError : (videoError?.message || String(videoError))) : 
+                  'Video not found';
+                throw new Error(`Failed to download video: ${errorMsg}. Video ID: ${videoId}`);
+              }
             }
           }
         } else {
