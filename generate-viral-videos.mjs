@@ -203,22 +203,45 @@ async function createRepurposeJob(platform, videoId, videoUrl) {
     overlap_prevention: true
   };
 
-  const { data: jobData, error: jobError } = await supabase.functions.invoke('repurpose-video', {
-    body: {
-      action: 'create_job',
-      userId: TEST_USER_ID,
-      videoId: videoId,
-      videoUrl: videoUrl,
-      options: options
+  let jobData, jobError;
+  try {
+    const result = await supabase.functions.invoke('repurpose-video', {
+      body: {
+        action: 'create_job',
+        userId: TEST_USER_ID,
+        videoId: videoId,
+        videoUrl: videoUrl,
+        options: options
+      }
+    });
+    
+    // Check if result has error property
+    if (result.error) {
+      jobError = result.error;
+      console.error(`   ❌ Edge Function error for ${platformName}:`, JSON.stringify(result.error, null, 2));
+    } else if (!result.data) {
+      // Check if response itself indicates an error
+      console.error(`   ❌ No data in response for ${platformName}:`, JSON.stringify(result, null, 2));
+      jobError = { message: 'No data in response', response: result };
+    } else {
+      jobData = result.data;
     }
-  });
+  } catch (err) {
+    jobError = err;
+    console.error(`   ❌ Exception creating ${platformName} job:`, err.message || err);
+    console.error(`   ❌ Exception details:`, JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+  }
   
   if (jobError) {
-    throw new Error(`Failed to create ${platformName} job: ${jobError.message}`);
+    const errorMsg = jobError.message || jobError.toString() || 'Unknown error';
+    const errorDetails = jobError.context ? JSON.stringify(jobError.context) : '';
+    const fullError = jobError.response ? JSON.stringify(jobError.response) : '';
+    throw new Error(`Failed to create ${platformName} job: ${errorMsg}${errorDetails ? ' - ' + errorDetails : ''}${fullError ? ' - Response: ' + fullError : ''}`);
   }
 
   if (!jobData || !jobData.jobId) {
-    throw new Error(`Missing jobId for ${platformName}`);
+    console.error(`   ❌ Invalid response for ${platformName}:`, JSON.stringify(jobData, null, 2));
+    throw new Error(`Missing jobId for ${platformName}. Response: ${JSON.stringify(jobData)}`);
   }
 
   return jobData.jobId;
@@ -291,15 +314,23 @@ async function generateViralVideos() {
       { key: 'instagram_reels', name: 'Instagram Reels' }
     ];
     
-    const jobPromises = platforms.map(p => 
-      createRepurposeJob(p.key, videoId, videoUrl).then(jobId => ({
-        platform: p.name,
-        key: p.key,
-        jobId
-      }))
-    );
-    
-    const jobs = await Promise.all(jobPromises);
+    // Create jobs sequentially with small delays to avoid rate limiting
+    const jobs = [];
+    for (const p of platforms) {
+      try {
+        const jobId = await createRepurposeJob(p.key, videoId, videoUrl);
+        jobs.push({
+          platform: p.name,
+          key: p.key,
+          jobId
+        });
+        // Small delay between job creations
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (err) {
+        console.error(`   ❌ Failed to create ${p.name} job:`, err.message);
+        throw err;
+      }
+    }
     console.log(`\n✅ All ${jobs.length} jobs created!`);
 
     // Step 3: Poll all jobs in parallel
