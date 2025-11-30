@@ -39,14 +39,22 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     
     if (!supabaseUrl) {
-      throw new Error('SUPABASE_URL environment variable is not set');
+      console.error('[Edge Function] SUPABASE_URL is not set');
+      return new Response(
+        JSON.stringify({ error: 'SUPABASE_URL environment variable is not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     if (!serviceRoleKey) {
-      throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
+      console.error('[Edge Function] SUPABASE_SERVICE_ROLE_KEY is not set');
+      return new Response(
+        JSON.stringify({ error: 'SUPABASE_SERVICE_ROLE_KEY environment variable is not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('[Edge Function] Initializing Supabase client...', { 
@@ -70,7 +78,18 @@ serve(async (req) => {
     // Also create a client for storage operations (uses service role for RLS bypass)
     const supabase = supabaseClient;
 
-    const body = await req.json();
+    // Parse request body with error handling
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      console.error('[Edge Function] JSON parse error:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to parse request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const { action, jobId, userId, videoId, videoUrl, options } = body;
 
     console.log('[Edge Function] Received request:', { action, hasUserId: !!userId, hasVideoId: !!videoId, hasVideoUrl: !!videoUrl });
@@ -95,7 +114,19 @@ serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
-        return await createRepurposeJob(supabaseClient, userId, videoId, videoUrl, options || {});
+        try {
+          return await createRepurposeJob(supabaseClient, userId, videoId, videoUrl, options || {});
+        } catch (createError: any) {
+          console.error('[Edge Function] Error in createRepurposeJob:', createError);
+          console.error('[Edge Function] Error details:', JSON.stringify(createError, Object.getOwnPropertyNames(createError)));
+          return new Response(
+            JSON.stringify({ 
+              error: createError?.message || createError?.toString() || 'Failed to create job',
+              details: createError?.stack || createError?.toString()
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       
       case 'get_status':
         return await getJobStatus(supabaseClient, jobId);
@@ -109,7 +140,7 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
-    } catch (error: any) {
+  } catch (error: any) {
     console.error('[Edge Function] Error in repurpose-video function:', error);
     console.error('[Edge Function] Error stack:', error.stack);
     console.error('[Edge Function] Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
@@ -171,13 +202,37 @@ async function createRepurposeJob(
       console.error('[Edge Function] Error code:', error.code);
       console.error('[Edge Function] Error details:', error.details);
       console.error('[Edge Function] Error hint:', error.hint);
-      throw new Error(`Failed to create job: ${error.message || 'Unknown error'}`);
+      console.error('[Edge Function] Error message:', error.message);
+      console.error('[Edge Function] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      
+      // Return a proper error response instead of throwing
+      return new Response(
+        JSON.stringify({ 
+          error: `Database error: ${error.message || 'Unknown error'}`,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('[Edge Function] Job created successfully:', data);
   } catch (err: any) {
     console.error('[Edge Function] Exception creating job:', err);
-    throw err;
+    console.error('[Edge Function] Exception type:', err?.constructor?.name);
+    console.error('[Edge Function] Exception message:', err?.message);
+    console.error('[Edge Function] Exception stack:', err?.stack);
+    
+    // Return a proper error response instead of throwing
+    return new Response(
+      JSON.stringify({ 
+        error: err?.message || err?.toString() || 'Failed to create job',
+        details: err?.stack || err?.toString(),
+        type: err?.constructor?.name || 'UnknownError'
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   console.log('[Edge Function] Job created, starting async processing...');
@@ -211,6 +266,8 @@ async function processRepurposeJob(
   options: any
 ) {
   const startTime = Date.now();
+  // Get Gemini API key once at the start (used in multiple phases)
+  const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
   console.log('[Edge Function] Starting job processing:', { jobId, userId, videoId, videoUrl });
   
   // Update status to processing
@@ -372,29 +429,80 @@ async function processRepurposeJob(
       .eq('id', jobId);
 
     // ============================================
-    // PHASE 2: Signal-Based Content Analysis (No LLM required)
+    // PHASE 2: AI-Powered Content Analysis for Viral Moments
     // ============================================
-    console.log('[Phase 2] Starting signal-based analysis for viral moments...');
+    let viralAnalysis: any;
     
-    await supabase
-      .from('repurpose_jobs')
-      .update({ progress: 25, updated_at: new Date().toISOString() })
-      .eq('id', jobId);
-
-    // Estimate video duration (in production, use ffprobe or video metadata)
-    // For now, we'll use a heuristic: assume 1MB ≈ 1 second for compressed video
-    const estimatedDuration = Math.max(60, Math.floor(videoBuffer.byteLength / (1024 * 1024))); // Minimum 60s
-    
-    // Analyze video using signal-based heuristics (no LLM needed)
-    const viralAnalysis = await analyzeVideoWithSignals(
-      estimatedDuration,
-      options
-    );
-    
-    console.log('[Phase 2] Signal analysis complete:', {
-      segmentsFound: viralAnalysis.segments.length,
-      averageScore: viralAnalysis.averageScore
-    });
+    if (geminiApiKey) {
+      console.log('[Phase 2] Using Gemini AI for deep viral moment analysis...');
+      
+      await supabase
+        .from('repurpose_jobs')
+        .update({ progress: 25, updated_at: new Date().toISOString() })
+        .eq('id', jobId);
+      
+      try {
+        // Upload video to Gemini File API for analysis
+        console.log('[Phase 2] Uploading video to Gemini for analysis...');
+        const geminiVideo = await uploadVideoToGemini(
+          geminiApiKey,
+          videoBuffer,
+          videoMimeType || 'video/mp4'
+        );
+        
+        await supabase
+          .from('repurpose_jobs')
+          .update({ progress: 35, updated_at: new Date().toISOString() })
+          .eq('id', jobId);
+        
+        // Analyze video using Gemini AI for viral moments
+        console.log('[Phase 2] Analyzing video with Gemini AI...');
+        viralAnalysis = await analyzeVideoForViralMoments(
+          geminiApiKey,
+          geminiVideo.uri,
+          options
+        );
+        
+        console.log('[Phase 2] Gemini AI analysis complete:', {
+          segmentsFound: viralAnalysis.segments.length,
+          averageScore: viralAnalysis.averageScore,
+          hasTranscript: !!viralAnalysis.transcript
+        });
+      } catch (geminiError: any) {
+        console.warn('[Phase 2] Gemini analysis failed, falling back to signal-based heuristics:', geminiError.message);
+        
+        // Fallback to signal-based analysis
+        const estimatedDuration = Math.max(60, Math.floor(videoBuffer.byteLength / (1024 * 1024)));
+        viralAnalysis = await analyzeVideoWithSignals(estimatedDuration, options);
+        
+        console.log('[Phase 2] Signal-based analysis complete (fallback):', {
+          segmentsFound: viralAnalysis.segments.length,
+          averageScore: viralAnalysis.averageScore
+        });
+      }
+    } else {
+      console.log('[Phase 2] No Gemini API key found, using signal-based heuristics...');
+      
+      await supabase
+        .from('repurpose_jobs')
+        .update({ progress: 25, updated_at: new Date().toISOString() })
+        .eq('id', jobId);
+      
+      // Estimate video duration (in production, use ffprobe or video metadata)
+      // For now, we'll use a heuristic: assume 1MB ≈ 1 second for compressed video
+      const estimatedDuration = Math.max(60, Math.floor(videoBuffer.byteLength / (1024 * 1024))); // Minimum 60s
+      
+      // Analyze video using signal-based heuristics (no LLM needed)
+      viralAnalysis = await analyzeVideoWithSignals(
+        estimatedDuration,
+        options
+      );
+      
+      console.log('[Phase 2] Signal-based analysis complete:', {
+        segmentsFound: viralAnalysis.segments.length,
+        averageScore: viralAnalysis.averageScore
+      });
+    }
     
     await supabase
       .from('repurpose_jobs')
@@ -427,7 +535,7 @@ async function processRepurposeJob(
     
     // Optional: Use LLM for enhancement (captions, titles, hashtags)
     // For MVP, we'll use simple heuristics
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    // geminiApiKey already declared at function start
     const enhancedClips = geminiApiKey 
       ? await enhanceClipsWithGemini(geminiApiKey, clips, options)
       : await enhanceClipsWithHeuristics(clips, options);
